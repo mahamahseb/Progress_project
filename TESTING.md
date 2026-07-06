@@ -43,3 +43,11 @@ Workflow file:
 ```txt
 .github/workflows/ci.yml
 ```
+
+Manual deployment workflow:
+
+```txt
+.github/workflows/deploy-minikube.yml
+```
+
+This workflow requires a self-hosted Linux runner on the Minikube server.

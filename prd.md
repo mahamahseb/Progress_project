@@ -52,6 +52,13 @@
 - [x] Validate Kubernetes manifest in CI
 - [x] Build backend and frontend Docker images in CI without pushing
 
+## CD Tasks
+
+- [x] Add manual GitHub Actions deployment workflow for Minikube
+- [x] Require self-hosted Linux runner for deployment
+- [x] Document self-hosted runner requirements
+- [x] Keep long-running ingress port-forward outside the GitHub Actions job
+
 ## Out of Scope for MVP
 
 - Role-based access control

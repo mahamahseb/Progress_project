@@ -81,6 +81,14 @@ From the project root on the Minikube server, run:
 bash scripts/deploy-minikube.sh
 ```
 
+Or run the manual GitHub Actions deployment workflow:
+
+```txt
+Actions -> Deploy to Minikube -> Run workflow
+```
+
+This requires a self-hosted Linux runner on the Minikube server.
+
 Or run the steps manually:
 
 ```bash

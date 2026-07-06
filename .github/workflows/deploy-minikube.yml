@@ -1,0 +1,37 @@
+name: Deploy to Minikube
+
+on:
+  workflow_dispatch:
+    inputs:
+      port_forward_port:
+        description: "Port to expose ingress-nginx on the Minikube server"
+        required: false
+        default: "8081"
+
+jobs:
+  deploy:
+    name: Deploy Progress Tracker
+    runs-on:
+      - self-hosted
+      - linux
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required tools
+        run: |
+          docker --version
+          minikube version
+          kubectl version --client
+
+      - name: Deploy to Minikube
+        env:
+          PORT_FORWARD_PORT: ${{ inputs.port_forward_port }}
+        run: bash scripts/deploy-minikube.sh
+
+      - name: Show access URL
+        run: |
+          echo "If ingress port-forward is running, open:"
+          echo "http://<server-ip>:${{ inputs.port_forward_port }}/"
+          echo "Health check:"
+          echo "curl http://127.0.0.1:${{ inputs.port_forward_port }}/health"
