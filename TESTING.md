@@ -28,3 +28,18 @@ Run:
 cd frontend
 npm run build
 ```
+
+## CI
+
+GitHub Actions CI runs:
+
+- backend tests
+- frontend build
+- Kubernetes manifest validation
+- Docker image build
+
+Workflow file:
+
+```txt
+.github/workflows/ci.yml
+```

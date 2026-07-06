@@ -44,6 +44,14 @@
 - [x] Use port `8081` for Progress Tracker ingress port-forward to avoid conflict with existing Minikube apps
 - [x] Add Minikube deployment helper script
 
+## CI Tasks
+
+- [x] Add GitHub Actions CI workflow
+- [x] Run backend tests in CI
+- [x] Build frontend in CI
+- [x] Validate Kubernetes manifest in CI
+- [x] Build backend and frontend Docker images in CI without pushing
+
 ## Out of Scope for MVP
 
 - Role-based access control

@@ -4,7 +4,27 @@ Future CI should run:
 
 - Backend tests.
 - Frontend build.
-- Optional Docker build.
+- Kubernetes manifest validation.
+- Docker image build without pushing.
+
+## GitHub Actions CI
+
+The CI workflow is defined in:
+
+```txt
+.github/workflows/ci.yml
+```
+
+It runs on pushes and pull requests targeting `main`.
+
+Jobs:
+
+- `backend-tests`: installs FastAPI backend dependencies and runs `pytest`.
+- `frontend-build`: installs frontend dependencies with `npm ci` and runs `npm run build`.
+- `kubernetes-validate`: validates `k8s/progress-tracker.yaml` with `kubectl --dry-run=client`.
+- `docker-build`: builds backend and frontend Docker images without pushing.
+
+This CI does not deploy to Minikube yet. CD should be added later with a self-hosted runner on the Minikube server.
 
 ## GitHub Actions Sync
 
