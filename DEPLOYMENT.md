@@ -27,7 +27,7 @@ Browser
   -> http://<server-ip>:8081
   -> kubectl port-forward
   -> Service: progress-tracker-frontend
-  -> Pods: frontend x 1, backend x 1
+  -> Pods: frontend x 3, backend x 3
 ```
 
 Resource summary:

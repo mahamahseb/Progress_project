@@ -31,7 +31,7 @@ metadata:
   name: progress-tracker-backend
   namespace: progress-tracker
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: progress-tracker-backend
@@ -101,7 +101,7 @@ metadata:
   name: progress-tracker-frontend
   namespace: progress-tracker
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: progress-tracker-frontend
