@@ -69,6 +69,29 @@ echo "Port-forward status:"
 pgrep -af "[k]ubectl -n ${NAMESPACE} port-forward --address 0.0.0.0 svc/progress-tracker-frontend ${PORT_FORWARD_PORT}:3000" || true
 cat "${PORT_FORWARD_LOG}" || true
 
+echo "Opening firewall ports when non-interactive sudo is available..."
+if command -v ufw >/dev/null 2>&1; then
+  if sudo -n true >/dev/null 2>&1; then
+    sudo ufw allow "${PORT_FORWARD_PORT}/tcp" || true
+    sudo ufw allow 30081/tcp || true
+    sudo ufw status || true
+  else
+    echo "Skipping ufw update because sudo requires a password."
+    echo "Run manually on the Minikube server:"
+    echo "sudo ufw allow ${PORT_FORWARD_PORT}/tcp"
+    echo "sudo ufw allow 30081/tcp"
+  fi
+else
+  echo "ufw is not installed; skipping firewall update."
+fi
+
+echo "Listening ports:"
+ss -ltnp | grep -E ":(${PORT_FORWARD_PORT}|30081) " || true
+
+echo "Local access checks:"
+curl -I --max-time 5 "http://127.0.0.1:${PORT_FORWARD_PORT}/" || true
+curl -I --max-time 5 "http://192.168.239.141:${PORT_FORWARD_PORT}/" || true
+
 cat <<EOF
 
 Deployment applied.
