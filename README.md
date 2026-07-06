@@ -15,9 +15,10 @@
 ```txt
 backend/    FastAPI API, parser, service, tests
 frontend/   Next.js dashboard scaffold
-docs/       เอกสาร architecture และ PRD format
+docs/       เอกสารแยกตามหมวด business, architecture, data, ai, devops, security, network, operations
 examples/   ตัวอย่าง prd.md และ GitHub Actions
-prd.md      PRD หลักของระบบนี้
+PRD.md      PRD หลักของระบบนี้
+AGENTS.md   กฎสำหรับ AI Coding Agent
 ```
 
 ## Backend quick start
@@ -88,3 +89,25 @@ DATABASE_PATH=progress_tracker.db
 ```
 
 ถ้าต้องการเก็บไว้ในโฟลเดอร์อื่น สามารถเปลี่ยน path ใน `.env` ได้
+
+## Documentation
+
+เอกสารมาตรฐานหลักอยู่ที่ root:
+
+- `PRD.md`
+- `AGENTS.md`
+- `ARCHITECTURE.md`
+- `SYSTEM_MAP.md`
+- `DOMAIN_MODEL.md`
+- `API.md`
+- `DATABASE.md`
+- `DEPLOYMENT.md`
+- `SECURITY.md`
+- `TESTING.md`
+- `CODING_STANDARD.md`
+- `CONTRIBUTING.md`
+- `DECISIONS.md`
+- `TODO.md`
+- `CHANGELOG.md`
+
+เอกสารรายละเอียดแยกตามหมวดอยู่ใน `docs/`

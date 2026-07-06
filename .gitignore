@@ -8,6 +8,8 @@ __pycache__/
 .venv/
 .env
 *.db
+.docker-config/
+.ssh-known/
 .npm-cache/
 .pnpm-store/
 .pnpm-home/

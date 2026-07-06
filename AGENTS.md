@@ -6,8 +6,9 @@ Project Progress Tracker is a web dashboard that tracks project development prog
 
 ## Source of Truth
 
-- `prd.md` is the source of truth for product scope, tasks, and progress percentage.
-- Update `prd.md` checkbox status after completing work.
+- `PRD.md` is the source of truth for this repository's product scope, tasks, and progress percentage.
+- Tracked external projects may still use `prd.md` as their default project PRD filename.
+- Update `PRD.md` checkbox status after completing work in this repository.
 - Do not count or add progress tasks inside fenced code blocks.
 - Keep `Out of Scope` items as normal bullets, not checkbox tasks, unless they become active work.
 
@@ -16,9 +17,9 @@ Project Progress Tracker is a web dashboard that tracks project development prog
 ```txt
 backend/     FastAPI backend, parser, sync flow, SQLite persistence
 frontend/    Next.js dashboard
-docs/        Architecture and setup notes
+docs/        Detailed documentation by domain
 examples/    Sample project PRD and GitHub Actions workflow
-prd.md       Product requirements and progress checklist
+PRD.md       Product requirements and progress checklist
 ```
 
 ## Backend Rules
@@ -126,5 +127,5 @@ Before ending a substantial change:
 
 - Run backend tests.
 - Build frontend when UI or frontend API code changes.
-- Update `prd.md` task checkboxes.
+- Update `PRD.md` task checkboxes.
 - Summarize any commands that failed because of local permission or environment issues.

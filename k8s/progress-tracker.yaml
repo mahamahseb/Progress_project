@@ -1,0 +1,171 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: progress-tracker
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: progress-tracker-secrets
+  namespace: progress-tracker
+type: Opaque
+stringData:
+  SYNC_TOKEN: change-me
+  GITHUB_TOKEN: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: progress-tracker-data
+  namespace: progress-tracker
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: progress-tracker-backend
+  namespace: progress-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: progress-tracker-backend
+  template:
+    metadata:
+      labels:
+        app: progress-tracker-backend
+    spec:
+      containers:
+        - name: backend
+          image: progress-tracker-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SYNC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: SYNC_TOKEN
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: GITHUB_TOKEN
+            - name: DATABASE_PATH
+              value: /data/progress_tracker.db
+            - name: CORS_ORIGINS
+              value: "*"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: progress-tracker-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: progress-tracker-backend
+  namespace: progress-tracker
+spec:
+  type: ClusterIP
+  selector:
+    app: progress-tracker-backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: progress-tracker-frontend
+  namespace: progress-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: progress-tracker-frontend
+  template:
+    metadata:
+      labels:
+        app: progress-tracker-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: progress-tracker-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: API_BASE_URL
+              value: http://progress-tracker-backend.progress-tracker.svc.cluster.local:8000
+            - name: NEXT_PUBLIC_API_BASE_URL
+              value: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: progress-tracker-frontend
+  namespace: progress-tracker
+spec:
+  type: ClusterIP
+  selector:
+    app: progress-tracker-frontend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: progress-tracker
+  namespace: progress-tracker
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "2m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: progress-tracker-backend
+                port:
+                  number: 8000
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: progress-tracker-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: progress-tracker-frontend
+                port:
+                  number: 3000

@@ -26,6 +26,24 @@
 - [x] แสดงรายละเอียด project และ task list
 - [x] เตรียม GitHub Actions example
 
+## Documentation Standard Tasks
+
+- [x] Rename repository source-of-truth PRD to `PRD.md`
+- [x] Add root documentation files for architecture, API, database, deployment, security, testing, standards, decisions, TODO, and changelog
+- [x] Add detailed documentation folders under `docs/`
+- [x] Add placeholder folders for source, tests, scripts, migrations, configs, docker, Kubernetes, assets, and tools
+- [x] Update `AGENTS.md` and `README.md` to reference the new documentation standard
+
+## Deployment Tasks
+
+- [x] Adapt Minikube deployment guide for Progress Tracker
+- [x] Add frontend Dockerfile
+- [x] Add Kubernetes manifest for backend, frontend, PVC, services, and ingress
+- [x] Document image build, Minikube image load, rollout, port-forward, and health check commands
+- [x] Split frontend server-side API base from browser-side API base
+- [x] Use port `8081` for Progress Tracker ingress port-forward to avoid conflict with existing Minikube apps
+- [x] Add Minikube deployment helper script
+
 ## Out of Scope for MVP
 
 - Role-based access control
