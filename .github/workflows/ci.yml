@@ -66,8 +66,34 @@ jobs:
         with:
           version: "v1.30.0"
 
+      - name: Install YAML parser
+        run: python -m pip install pyyaml
+
       - name: Validate manifests
-        run: kubectl apply --dry-run=client --validate=false -f k8s/progress-tracker.yaml
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          import yaml
+
+          path = Path("k8s/progress-tracker.yaml")
+          docs = [doc for doc in yaml.safe_load_all(path.read_text()) if doc]
+          if not docs:
+              raise SystemExit(f"{path} does not contain Kubernetes resources")
+
+          required = ("apiVersion", "kind", "metadata")
+          for index, doc in enumerate(docs, start=1):
+              missing = [key for key in required if key not in doc]
+              if missing:
+                  raise SystemExit(
+                      f"{path} document {index} is missing: {', '.join(missing)}"
+                  )
+              metadata = doc.get("metadata") or {}
+              if not metadata.get("name"):
+                  raise SystemExit(f"{path} document {index} is missing metadata.name")
+
+          print(f"Validated {len(docs)} Kubernetes resources in {path}")
+          PY
 
   docker-build:
     name: Docker build
