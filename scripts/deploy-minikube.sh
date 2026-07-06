@@ -43,6 +43,10 @@ cat <<EOF
 
 Deployment applied.
 
+Direct IP access:
+
+http://<server-ip>:30081/
+
 Ingress host:
 
 progress-tracker.local

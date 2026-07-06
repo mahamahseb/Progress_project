@@ -24,12 +24,21 @@ The Minikube deployment uses:
 
 ```txt
 Browser
+  -> http://<server-ip>:30081
+  -> Service: progress-tracker-web (NodePort)
+  -> Service: progress-tracker-frontend
+  -> Pods: frontend x 3, backend x 3
+```
+
+Optional ingress path:
+
+```txt
+Browser
   -> http://progress-tracker.local:8081
   -> kubectl port-forward
   -> ingress-nginx
   -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
-  -> Pods: frontend x 3, backend x 3
 ```
 
 Resource summary:
@@ -43,6 +52,7 @@ Resource summary:
 | Deployment | `progress-tracker-frontend` | `progress-tracker` | Runs Next.js frontend |
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
+| Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
 | Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.local` to the frontend service |
 
 ## Images
@@ -108,7 +118,19 @@ kubectl rollout status deployment/progress-tracker-backend -n progress-tracker
 kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 ```
 
-Expose ingress-nginx on server port `8081`.
+Open the dashboard directly by server IP:
+
+```txt
+http://<server-ip>:30081/
+```
+
+For the current Minikube server:
+
+```txt
+http://192.168.239.141:30081/
+```
+
+Optional: expose ingress-nginx on server port `8081`.
 
 Use `8081` to avoid conflicts with an existing Minikube app or namespace that may already be using `8080`:
 
