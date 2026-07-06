@@ -24,17 +24,26 @@ The Minikube deployment uses:
 
 ```txt
 Browser
+  -> http://<server-ip>:8081
+  -> kubectl port-forward
+  -> Service: progress-tracker-frontend
+  -> Pods: frontend x 3, backend x 3
+```
+
+NodePort fallback:
+
+```txt
+Browser
   -> http://<server-ip>:30081
   -> Service: progress-tracker-web (NodePort)
   -> Service: progress-tracker-frontend
-  -> Pods: frontend x 3, backend x 3
 ```
 
 Optional ingress path:
 
 ```txt
 Browser
-  -> http://progress-tracker.local:8081
+  -> http://progress-tracker.local:8082
   -> kubectl port-forward
   -> ingress-nginx
   -> Ingress: progress-tracker
@@ -118,42 +127,48 @@ kubectl rollout status deployment/progress-tracker-backend -n progress-tracker
 kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 ```
 
-Open the dashboard directly by server IP:
+Open the dashboard directly by server IP after deployment:
 
 ```txt
-http://<server-ip>:30081/
+http://<server-ip>:8081/
 ```
 
 For the current Minikube server:
 
 ```txt
-http://192.168.239.141:30081/
+http://192.168.239.141:8081/
 ```
 
-Optional: expose ingress-nginx on server port `8081`.
+Optional: expose ingress-nginx on server port `8082`.
 
-Use `8081` to avoid conflicts with an existing Minikube app or namespace that may already be using `8080`:
+Use `8082` to avoid conflicts with direct frontend access on `8081`:
 
 ```bash
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8081:80
+kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8082:80
 ```
 
 Test:
 
 ```bash
-curl -H "Host: progress-tracker.local" http://127.0.0.1:8081/health
+curl -H "Host: progress-tracker.local" http://127.0.0.1:8082/health
 ```
 
 Open dashboard:
 
 ```txt
-http://progress-tracker.local:8081/
+http://progress-tracker.local:8082/
 ```
 
 For browser access from another machine, map `progress-tracker.local` to the Minikube server IP, for example:
 
 ```txt
 192.168.239.141 progress-tracker.local
+```
+
+If direct port-forward is unavailable, use the NodePort fallback:
+
+```txt
+http://192.168.239.141:30081/
 ```
 
 ## Future Production Direction
