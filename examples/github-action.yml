@@ -1,0 +1,23 @@
+name: Update Progress
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify progress tracker
+        run: |
+          curl -X POST "${{ secrets.PROGRESS_TRACKER_URL }}/api/sync/github" \
+            -H "Authorization: Bearer ${{ secrets.PROGRESS_TRACKER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repo": "${{ github.repository }}",
+              "branch": "${{ github.ref_name }}",
+              "prd_path": "prd.md",
+              "commit_sha": "${{ github.sha }}"
+            }'

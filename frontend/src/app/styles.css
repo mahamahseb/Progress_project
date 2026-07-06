@@ -1,0 +1,222 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f6f7f9;
+  color: #17202a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #5a6675;
+  font-size: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 0;
+}
+
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.projectCard {
+  display: grid;
+  gap: 14px;
+  min-height: 160px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+}
+
+.projectCard h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.projectMeta {
+  color: #5a6675;
+  font-size: 14px;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  background: #e8ecf1;
+  border-radius: 999px;
+}
+
+.progressFill {
+  height: 100%;
+  background: #1877f2;
+}
+
+.percent {
+  font-size: 28px;
+}
+
+.taskList {
+  display: grid;
+  gap: 10px;
+}
+
+.taskRow {
+  display: grid;
+  grid-template-columns: 64px 1fr 180px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+}
+
+.taskRow span,
+.taskRow small {
+  color: #5a6675;
+}
+
+.toolPanel {
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+}
+
+label span {
+  color: #5a6675;
+  font-size: 13px;
+}
+
+input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: #17202a;
+  background: #ffffff;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: #1877f2;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.sectionBlock {
+  margin-top: 28px;
+}
+
+.sectionBlock h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.logList {
+  display: grid;
+  gap: 8px;
+}
+
+.logRow {
+  display: grid;
+  grid-template-columns: 84px 180px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+}
+
+.logRow small {
+  color: #5a6675;
+}
+
+.statusSuccess {
+  color: #137333;
+  font-weight: 700;
+}
+
+.statusFailed {
+  color: #b3261e;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .taskRow {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid,
+  .logRow {
+    grid-template-columns: 1fr;
+  }
+}

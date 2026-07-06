@@ -1,0 +1,92 @@
+# PRD: Project Progress Tracker
+
+## Goal
+
+สร้างระบบ web dashboard สำหรับติดตามเปอร์เซ็นต์การพัฒนาโปรเจกต์แบบใกล้ real-time จากไฟล์ `prd.md` ของแต่ละ repository
+
+## Users
+
+- Project owner ที่ต้องการเห็นภาพรวมความคืบหน้าของหลายระบบ
+- Developer ที่อัปเดต task ผ่าน `prd.md`
+- Manager ที่ต้องการดูสถานะล่าสุดหลังทีม push code ขึ้น GitHub
+
+## MVP Scope
+
+- [x] ลงทะเบียน project พร้อม repository, branch และ path ของ `prd.md`
+- [x] อ่านไฟล์ `prd.md` จาก local path สำหรับโหมด dev
+- [x] อ่านไฟล์ `prd.md` จาก GitHub สำหรับโหมด production
+- [x] Parse checkbox task จาก Markdown
+- [x] แบ่ง task ตาม heading หรือ section
+- [x] คำนวณเปอร์เซ็นต์จาก completed tasks / total tasks
+- [x] เปิด API สำหรับดู project list
+- [x] เปิด API สำหรับดู project detail พร้อม task breakdown
+- [x] เปิด API สำหรับ sync หลัง GitHub push
+- [x] เก็บ sync log เพื่อ debug ได้ง่าย
+- [x] แสดง dashboard หน้าแรก
+- [x] แสดงรายละเอียด project และ task list
+- [x] เตรียม GitHub Actions example
+
+## Out of Scope for MVP
+
+- Role-based access control
+- Multi-tenant billing
+- Advanced analytics
+- AI summary
+- Auto-edit `prd.md`
+
+## PRD Task Format
+
+ระบบ MVP จะอ่าน task จากรูปแบบนี้:
+
+```md
+- [x] Completed task
+- [ ] Pending task
+```
+
+รองรับ section จาก heading:
+
+```md
+## Backend
+- [x] Create API
+- [ ] Add tests
+```
+
+## Backend Tasks
+
+- [x] Setup FastAPI project
+- [x] Create settings module
+- [x] Create SQLite repository for MVP
+- [x] Create project schemas
+- [x] Create task schemas
+- [x] Create PRD parser
+- [x] Create progress calculator
+- [x] Create project service
+- [x] Create sync service
+- [x] Create project API routes
+- [x] Create sync API route
+- [x] Add parser tests
+- [x] Add progress calculator tests
+
+## Frontend Tasks
+
+- [x] Setup Next.js project
+- [x] Create dashboard page
+- [x] Create project list component
+- [x] Create progress bar component
+- [x] Create project detail page
+- [x] Connect dashboard to backend API
+
+## GitHub Integration Tasks
+
+- [x] Create GitHub client
+- [x] Support GitHub token from env
+- [x] Fetch `prd.md` by repo, branch, path
+- [x] Create GitHub Actions example
+- [x] Add sync token protection
+
+## Success Criteria
+
+- Dashboard แสดง progress ของ sample project ได้
+- Parser อ่าน task จาก `examples/sample-project/prd.md` ได้ถูกต้อง
+- API sync สามารถรับ payload แล้วคำนวณ progress ใหม่ได้
+- โค้ดแต่ละส่วนแก้ตรงจุดโดยไม่ต้องไล่ทั้งระบบ
