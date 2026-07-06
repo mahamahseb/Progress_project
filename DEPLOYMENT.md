@@ -24,8 +24,10 @@ The Minikube deployment uses:
 
 ```txt
 Browser
-  -> http://<server-ip>:8081
+  -> http://progress-tracker.local:8081
   -> kubectl port-forward
+  -> ingress-nginx
+  -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
   -> Pods: frontend x 3, backend x 3
 ```
@@ -40,7 +42,8 @@ Resource summary:
 | Deployment | `progress-tracker-backend` | `progress-tracker` | Runs FastAPI backend |
 | Deployment | `progress-tracker-frontend` | `progress-tracker` | Runs Next.js frontend |
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
-| Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service exposed through port-forward |
+| Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
+| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.local` to the frontend service |
 
 ## Images
 
@@ -99,29 +102,36 @@ RUNNER_TOKEN=<token-from-github> bash scripts/install-github-runner.sh
 Or run the steps manually:
 
 ```bash
+minikube addons enable ingress
 kubectl apply -f k8s/progress-tracker.yaml
 kubectl rollout status deployment/progress-tracker-backend -n progress-tracker
 kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 ```
 
-Expose the frontend service on server port `8081`.
+Expose ingress-nginx on server port `8081`.
 
 Use `8081` to avoid conflicts with an existing Minikube app or namespace that may already be using `8080`:
 
 ```bash
-kubectl -n progress-tracker port-forward --address 0.0.0.0 svc/progress-tracker-frontend 8081:3000
+kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8081:80
 ```
 
 Test:
 
 ```bash
-curl http://127.0.0.1:8081/health
+curl -H "Host: progress-tracker.local" http://127.0.0.1:8081/health
 ```
 
 Open dashboard:
 
 ```txt
-http://<server-ip>:8081/
+http://progress-tracker.local:8081/
+```
+
+For browser access from another machine, map `progress-tracker.local` to the Minikube server IP, for example:
+
+```txt
+192.168.239.141 progress-tracker.local
 ```
 
 ## Future Production Direction
