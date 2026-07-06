@@ -58,6 +58,7 @@
 - [x] Require self-hosted Linux runner for deployment
 - [x] Document self-hosted runner requirements
 - [x] Keep long-running ingress port-forward outside the GitHub Actions job
+- [x] Add self-hosted runner installer script
 
 ## Out of Scope for MVP
 

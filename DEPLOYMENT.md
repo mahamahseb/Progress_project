@@ -89,6 +89,13 @@ Actions -> Deploy to Minikube -> Run workflow
 
 This requires a self-hosted Linux runner on the Minikube server.
 
+Install the runner on the Minikube server:
+
+```bash
+git pull origin main
+RUNNER_TOKEN=<token-from-github> bash scripts/install-github-runner.sh
+```
+
 Or run the steps manually:
 
 ```bash

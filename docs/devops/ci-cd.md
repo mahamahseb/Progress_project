@@ -84,6 +84,31 @@ minikube version
 kubectl version --client
 ```
 
+This repository also provides an installer script:
+
+```bash
+git pull origin main
+RUNNER_TOKEN=<token-from-github> bash scripts/install-github-runner.sh
+```
+
+Default runner settings:
+
+```txt
+REPO_URL=https://github.com/mahamahseb/Progress_project
+RUNNER_NAME=progress-tracker-minikube
+RUNNER_LABELS=self-hosted,linux,progress-tracker,minikube
+RUNNER_DIR=$HOME/actions-runner-progress-tracker
+```
+
+You can override them:
+
+```bash
+RUNNER_TOKEN=<token> \
+RUNNER_NAME=my-runner \
+RUNNER_LABELS=self-hosted,linux,minikube \
+bash scripts/install-github-runner.sh
+```
+
 ## GitHub Actions Sync
 
 Tracked repositories can call:
