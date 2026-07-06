@@ -7,10 +7,16 @@ on:
         description: "Port to expose ingress-nginx on the Minikube server"
         required: false
         default: "8081"
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
 
 jobs:
   deploy:
     name: Deploy Progress Tracker
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on:
       - self-hosted
       - linux
@@ -26,12 +32,14 @@ jobs:
 
       - name: Deploy to Minikube
         env:
-          PORT_FORWARD_PORT: ${{ inputs.port_forward_port }}
+          PORT_FORWARD_PORT: ${{ inputs.port_forward_port || '8081' }}
         run: bash scripts/deploy-minikube.sh
 
       - name: Show access URL
+        env:
+          PORT_FORWARD_PORT: ${{ inputs.port_forward_port || '8081' }}
         run: |
           echo "If ingress port-forward is running, open:"
-          echo "http://<server-ip>:${{ inputs.port_forward_port }}/"
+          echo "http://progress-tracker.local:${PORT_FORWARD_PORT}/"
           echo "Health check:"
-          echo "curl http://127.0.0.1:${{ inputs.port_forward_port }}/health"
+          echo "curl -H \"Host: progress-tracker.local\" http://127.0.0.1:${PORT_FORWARD_PORT}/health"
