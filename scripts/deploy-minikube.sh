@@ -21,6 +21,10 @@ minikube image load "${FRONTEND_IMAGE}"
 echo "Applying Kubernetes manifests..."
 kubectl apply -f k8s/progress-tracker.yaml
 
+echo "Restarting deployments to use the latest loaded images..."
+kubectl rollout restart deployment/progress-tracker-backend -n "${NAMESPACE}"
+kubectl rollout restart deployment/progress-tracker-frontend -n "${NAMESPACE}"
+
 echo "Waiting for rollout..."
 kubectl rollout status deployment/progress-tracker-backend -n "${NAMESPACE}"
 kubectl rollout status deployment/progress-tracker-frontend -n "${NAMESPACE}"
