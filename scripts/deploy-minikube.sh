@@ -47,8 +47,23 @@ if [ -n "${existing_pids}" ]; then
   sleep 2
 fi
 
-RUNNER_TRACKING_ID="" nohup kubectl -n "${NAMESPACE}" port-forward --address 0.0.0.0 svc/progress-tracker-frontend "${PORT_FORWARD_PORT}:3000" > "${PORT_FORWARD_LOG}" 2>&1 &
-sleep 3
+if command -v setsid >/dev/null 2>&1; then
+  env -u RUNNER_TRACKING_ID setsid nohup kubectl -n "${NAMESPACE}" port-forward --address 0.0.0.0 svc/progress-tracker-frontend "${PORT_FORWARD_PORT}:3000" > "${PORT_FORWARD_LOG}" 2>&1 < /dev/null &
+else
+  env -u RUNNER_TRACKING_ID nohup kubectl -n "${NAMESPACE}" port-forward --address 0.0.0.0 svc/progress-tracker-frontend "${PORT_FORWARD_PORT}:3000" > "${PORT_FORWARD_LOG}" 2>&1 < /dev/null &
+fi
+
+for attempt in 1 2 3 4 5; do
+  sleep 2
+  if curl -fsS "http://127.0.0.1:${PORT_FORWARD_PORT}/" >/dev/null; then
+    break
+  fi
+  if [ "${attempt}" = "5" ]; then
+    echo "Port-forward did not become ready on 127.0.0.1:${PORT_FORWARD_PORT}"
+    cat "${PORT_FORWARD_LOG}" || true
+    exit 1
+  fi
+done
 
 echo "Port-forward status:"
 pgrep -af "[k]ubectl -n ${NAMESPACE} port-forward --address 0.0.0.0 svc/progress-tracker-frontend ${PORT_FORWARD_PORT}:3000" || true
@@ -74,15 +89,7 @@ Ingress host:
 
 progress-tracker.local
 
-To expose the dashboard on port ${PORT_FORWARD_PORT}, run:
+Direct health check:
 
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller ${PORT_FORWARD_PORT}:80
-
-Then open:
-
-http://progress-tracker.local:${PORT_FORWARD_PORT}/
-
-Health check:
-
-curl -H "Host: progress-tracker.local" http://127.0.0.1:${PORT_FORWARD_PORT}/health
+curl http://127.0.0.1:${PORT_FORWARD_PORT}/health
 EOF

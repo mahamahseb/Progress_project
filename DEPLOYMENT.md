@@ -139,6 +139,8 @@ For the current Minikube server:
 http://192.168.239.141:8081/
 ```
 
+The deployment script starts this direct IP port-forward automatically and checks that it answers locally before the job finishes.
+
 Optional: expose ingress-nginx on server port `8082`.
 
 Use `8082` to avoid conflicts with direct frontend access on `8081`:
