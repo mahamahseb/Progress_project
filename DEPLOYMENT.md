@@ -25,9 +25,8 @@ The Minikube deployment uses:
 ```txt
 Browser
   -> http://<server-ip>:8081
-  -> ingress-nginx
-  -> Ingress: progress-tracker
-  -> Service: progress-tracker-frontend or progress-tracker-backend
+  -> kubectl port-forward
+  -> Service: progress-tracker-frontend
   -> Pods: frontend x 1, backend x 1
 ```
 
@@ -41,8 +40,7 @@ Resource summary:
 | Deployment | `progress-tracker-backend` | `progress-tracker` | Runs FastAPI backend |
 | Deployment | `progress-tracker-frontend` | `progress-tracker` | Runs Next.js frontend |
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
-| Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
-| Ingress | `progress-tracker` | `progress-tracker` | Routes `/api`, `/health`, and `/` |
+| Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service exposed through port-forward |
 
 ## Images
 
@@ -71,7 +69,9 @@ because the images are loaded into Minikube directly.
 The frontend uses two API base settings:
 
 - `API_BASE_URL`: internal backend URL for server-side rendering.
-- `NEXT_PUBLIC_API_BASE_URL`: browser-side URL. In the Minikube ingress setup this is empty so browser requests use relative `/api` routes.
+- `NEXT_PUBLIC_API_BASE_URL`: browser-side URL. In the Minikube setup this is empty so browser requests use relative `/api` routes.
+
+Next.js rewrites `/api/*` and `/health` to the backend service inside the cluster, so the browser only needs one exposed port.
 
 ## Deploy
 
@@ -99,18 +99,17 @@ RUNNER_TOKEN=<token-from-github> bash scripts/install-github-runner.sh
 Or run the steps manually:
 
 ```bash
-minikube addons enable ingress
 kubectl apply -f k8s/progress-tracker.yaml
 kubectl rollout status deployment/progress-tracker-backend -n progress-tracker
 kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 ```
 
-Expose Ingress on server port `8081`.
+Expose the frontend service on server port `8081`.
 
 Use `8081` to avoid conflicts with an existing Minikube app or namespace that may already be using `8080`:
 
 ```bash
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8081:80
+kubectl -n progress-tracker port-forward --address 0.0.0.0 svc/progress-tracker-frontend 8081:3000
 ```
 
 Test:

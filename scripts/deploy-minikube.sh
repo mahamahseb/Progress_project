@@ -18,10 +18,6 @@ echo "Loading images into Minikube..."
 minikube image load "${BACKEND_IMAGE}"
 minikube image load "${FRONTEND_IMAGE}"
 
-echo "Enabling ingress..."
-minikube addons enable ingress
-kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
-
 echo "Applying Kubernetes manifests..."
 kubectl apply -f k8s/progress-tracker.yaml
 
@@ -32,16 +28,15 @@ kubectl rollout status deployment/progress-tracker-frontend -n "${NAMESPACE}"
 echo "Current resources:"
 kubectl get pods -n "${NAMESPACE}" -o wide
 kubectl get svc -n "${NAMESPACE}"
-kubectl get ingress -n "${NAMESPACE}" -o wide
 kubectl get pvc -n "${NAMESPACE}"
 
 cat <<EOF
 
 Deployment applied.
 
-To expose through ingress-nginx on port ${PORT_FORWARD_PORT}, run:
+To expose the dashboard on port ${PORT_FORWARD_PORT}, run:
 
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller ${PORT_FORWARD_PORT}:80
+kubectl -n ${NAMESPACE} port-forward --address 0.0.0.0 svc/progress-tracker-frontend ${PORT_FORWARD_PORT}:3000
 
 Then open:
 
