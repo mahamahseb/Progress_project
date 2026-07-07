@@ -158,11 +158,13 @@ metadata:
   namespace: progress-tracker
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "2m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - secretName: progress-tracker-tls
   rules:
-    - host: progress-tracker.local
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix

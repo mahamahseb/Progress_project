@@ -24,10 +24,20 @@ The Minikube deployment uses:
 
 ```txt
 Browser
+  -> https://<server-ip>
+  -> NGINX Ingress Controller
+  -> Ingress: progress-tracker
+  -> Service: progress-tracker-frontend
+  -> Pods: frontend x 3, backend x 3
+```
+
+Direct port-forward fallback:
+
+```txt
+Browser
   -> http://<server-ip>:8081
   -> kubectl port-forward
   -> Service: progress-tracker-frontend
-  -> Pods: frontend x 3, backend x 3
 ```
 
 NodePort fallback:
@@ -36,17 +46,6 @@ NodePort fallback:
 Browser
   -> http://<server-ip>:30081
   -> Service: progress-tracker-web (NodePort)
-  -> Service: progress-tracker-frontend
-```
-
-Optional ingress path:
-
-```txt
-Browser
-  -> http://progress-tracker.local:8082
-  -> kubectl port-forward
-  -> ingress-nginx
-  -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
 ```
 
@@ -62,7 +61,7 @@ Resource summary:
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
 | Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
-| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.local` to the frontend service |
+| Ingress | `progress-tracker` | `progress-tracker` | Routes HTTPS IP access to the frontend service |
 
 ## Images
 
@@ -127,44 +126,39 @@ kubectl rollout status deployment/progress-tracker-backend -n progress-tracker
 kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 ```
 
-Open the dashboard directly by server IP after deployment:
+Open the dashboard through HTTPS ingress after deployment:
 
 ```txt
-http://<server-ip>:8081/
+https://<server-ip>/
 ```
 
 For the current Minikube server:
 
 ```txt
-http://192.168.239.141:8081/
+https://192.168.239.141/
 ```
 
-The deployment script starts this direct IP port-forward automatically and checks that it answers locally before the job finishes.
+The deployment script creates a self-signed TLS certificate for `192.168.239.141`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
 
-Optional: expose ingress-nginx on server port `8082`.
+Because this is an IP-based self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
 
-Use `8082` to avoid conflicts with direct frontend access on `8081`:
+If the GitHub Actions runner cannot bind port `443` because sudo requires a password, run this on the Minikube server:
 
 ```bash
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8082:80
+sudo kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 443:443
 ```
 
 Test:
 
 ```bash
-curl -H "Host: progress-tracker.local" http://127.0.0.1:8082/health
+curl -kI https://127.0.0.1/
+curl -kI https://192.168.239.141/
 ```
 
-Open dashboard:
+Direct port-forward fallback:
 
 ```txt
-http://progress-tracker.local:8082/
-```
-
-For browser access from another machine, map `progress-tracker.local` to the Minikube server IP, for example:
-
-```txt
-192.168.239.141 progress-tracker.local
+http://192.168.239.141:8081/
 ```
 
 If direct port-forward is unavailable, use the NodePort fallback:
