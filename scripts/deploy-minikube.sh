@@ -8,6 +8,9 @@ PORT_FORWARD_PORT="${PORT_FORWARD_PORT:-8081}"
 PORT_FORWARD_LOG="/tmp/progress-tracker-port-forward.log"
 SERVER_IP="${SERVER_IP:-192.168.239.141}"
 INGRESS_HOST="${INGRESS_HOST:-progress-tracker.192.168.239.141.sslip.io}"
+HELLO_WORLD_NAMESPACE="${HELLO_WORLD_NAMESPACE:-hello-world}"
+HELLO_WORLD_INGRESS="${HELLO_WORLD_INGRESS:-hello-world}"
+HELLO_WORLD_HOST="${HELLO_WORLD_HOST:-hello.192.168.239.141.sslip.io}"
 HTTPS_PORT="${HTTPS_PORT:-443}"
 HTTPS_FORWARD_LOG="/tmp/progress-tracker-https-port-forward.log"
 
@@ -26,6 +29,17 @@ minikube image load "${FRONTEND_IMAGE}"
 echo "Enabling ingress..."
 minikube addons enable ingress
 kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
+
+echo "Ensuring hello-world ingress uses a dedicated host..."
+if kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" >/dev/null 2>&1; then
+  kubectl patch ingress "${HELLO_WORLD_INGRESS}" \
+    -n "${HELLO_WORLD_NAMESPACE}" \
+    --type=json \
+    -p="[{\"op\":\"add\",\"path\":\"/spec/rules/0/host\",\"value\":\"${HELLO_WORLD_HOST}\"}]"
+  kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" -o wide
+else
+  echo "No ${HELLO_WORLD_NAMESPACE}/${HELLO_WORLD_INGRESS} ingress found; skipping hello-world ingress update."
+fi
 
 echo "Preparing TLS certificate for https://${INGRESS_HOST}..."
 kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1 || kubectl create namespace "${NAMESPACE}"
@@ -172,6 +186,10 @@ Primary HTTPS ingress access:
 https://${INGRESS_HOST}:${EFFECTIVE_HTTPS_PORT}/
 
 This sslip.io hostname resolves to ${SERVER_IP}; no hosts-file edit is required.
+
+hello-world ingress host:
+
+https://${HELLO_WORLD_HOST}:${EFFECTIVE_HTTPS_PORT}/
 
 Direct IP access:
 

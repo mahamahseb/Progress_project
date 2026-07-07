@@ -31,6 +31,20 @@ Browser
   -> Pods: frontend x 3, backend x 3
 ```
 
+The shared NGINX Ingress Controller routes each namespace by hostname:
+
+```txt
+https://hello.192.168.239.141.sslip.io
+  -> ingress-nginx
+  -> namespace: hello-world
+  -> ingress: hello-world
+
+https://progress-tracker.192.168.239.141.sslip.io
+  -> ingress-nginx
+  -> namespace: progress-tracker
+  -> ingress: progress-tracker
+```
+
 Direct port-forward fallback:
 
 ```txt
@@ -134,7 +148,7 @@ https://progress-tracker.192.168.239.141.sslip.io/
 
 This `sslip.io` hostname resolves to `192.168.239.141`, so no local hosts-file edit is required.
 
-The deployment script creates a self-signed TLS certificate for `progress-tracker.192.168.239.141.sslip.io`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
+The deployment script moves the existing `hello-world` ingress to `hello.192.168.239.141.sslip.io`, creates a self-signed TLS certificate for `progress-tracker.192.168.239.141.sslip.io`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
 
 Because this is a self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
 
