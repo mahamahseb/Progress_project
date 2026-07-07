@@ -32,10 +32,32 @@ kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
 
 echo "Ensuring hello-world ingress uses a dedicated host..."
 if kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" >/dev/null 2>&1; then
+  echo "Preparing TLS certificate for https://${HELLO_WORLD_HOST}..."
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /tmp/hello-world-tls.key \
+    -out /tmp/hello-world-tls.crt \
+    -subj "/CN=${HELLO_WORLD_HOST}" \
+    -addext "subjectAltName = DNS:${HELLO_WORLD_HOST}"
+  kubectl create secret tls hello-world-tls \
+    -n "${HELLO_WORLD_NAMESPACE}" \
+    --cert=/tmp/hello-world-tls.crt \
+    --key=/tmp/hello-world-tls.key \
+    --dry-run=client -o yaml | kubectl apply -f -
+
   kubectl patch ingress "${HELLO_WORLD_INGRESS}" \
     -n "${HELLO_WORLD_NAMESPACE}" \
     --type=json \
-    -p="[{\"op\":\"add\",\"path\":\"/spec/rules/0/host\",\"value\":\"${HELLO_WORLD_HOST}\"}]"
+    -p="[
+      {\"op\":\"add\",\"path\":\"/spec/rules/0/host\",\"value\":\"${HELLO_WORLD_HOST}\"},
+      {\"op\":\"add\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
+    ]" || \
+  kubectl patch ingress "${HELLO_WORLD_INGRESS}" \
+    -n "${HELLO_WORLD_NAMESPACE}" \
+    --type=json \
+    -p="[
+      {\"op\":\"replace\",\"path\":\"/spec/rules/0/host\",\"value\":\"${HELLO_WORLD_HOST}\"},
+      {\"op\":\"replace\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
+    ]"
   kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" -o wide
 else
   echo "No ${HELLO_WORLD_NAMESPACE}/${HELLO_WORLD_INGRESS} ingress found; skipping hello-world ingress update."

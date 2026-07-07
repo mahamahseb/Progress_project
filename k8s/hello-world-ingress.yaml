@@ -5,6 +5,10 @@ metadata:
   namespace: hello-world
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - hello.192.168.239.141.sslip.io
+      secretName: hello-world-tls
   rules:
     - host: hello.192.168.239.141.sslip.io
       http:
