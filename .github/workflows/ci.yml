@@ -137,10 +137,6 @@ jobs:
         if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
-        uses: docker/setup-buildx-action@v3
-
       - name: Login to DockerHub
         if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
@@ -150,22 +146,20 @@ jobs:
 
       - name: Build and push backend image
         if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: backend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/progress-tracker-backend:latest
-            ${{ env.DOCKERHUB_USERNAME }}/progress-tracker-backend:${{ github.sha }}
+        run: |
+          docker build \
+            -t "${DOCKERHUB_USERNAME}/progress-tracker-backend:latest" \
+            -t "${DOCKERHUB_USERNAME}/progress-tracker-backend:${GITHUB_SHA}" \
+            -f backend/Dockerfile .
+          docker push "${DOCKERHUB_USERNAME}/progress-tracker-backend:latest"
+          docker push "${DOCKERHUB_USERNAME}/progress-tracker-backend:${GITHUB_SHA}"
 
       - name: Build and push frontend image
         if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/progress-tracker-frontend:latest
-            ${{ env.DOCKERHUB_USERNAME }}/progress-tracker-frontend:${{ github.sha }}
+        run: |
+          docker build \
+            -t "${DOCKERHUB_USERNAME}/progress-tracker-frontend:latest" \
+            -t "${DOCKERHUB_USERNAME}/progress-tracker-frontend:${GITHUB_SHA}" \
+            -f frontend/Dockerfile ./frontend
+          docker push "${DOCKERHUB_USERNAME}/progress-tracker-frontend:latest"
+          docker push "${DOCKERHUB_USERNAME}/progress-tracker-frontend:${GITHUB_SHA}"
