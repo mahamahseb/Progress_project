@@ -2,8 +2,23 @@
 set -euo pipefail
 
 NAMESPACE="progress-tracker"
-BACKEND_IMAGE="progress-tracker-backend:latest"
-FRONTEND_IMAGE="progress-tracker-frontend:latest"
+DOCKERHUB_NAMESPACE="${DOCKERHUB_NAMESPACE:-}"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
+USE_REMOTE_IMAGES="${USE_REMOTE_IMAGES:-}"
+if [ -n "${DOCKERHUB_NAMESPACE}" ]; then
+  BACKEND_IMAGE="${BACKEND_IMAGE:-${DOCKERHUB_NAMESPACE}/progress-tracker-backend:${IMAGE_TAG}}"
+  FRONTEND_IMAGE="${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE}/progress-tracker-frontend:${IMAGE_TAG}}"
+else
+  BACKEND_IMAGE="${BACKEND_IMAGE:-progress-tracker-backend:latest}"
+  FRONTEND_IMAGE="${FRONTEND_IMAGE:-progress-tracker-frontend:latest}"
+fi
+if [ -z "${USE_REMOTE_IMAGES}" ]; then
+  if [ -n "${DOCKERHUB_NAMESPACE}" ]; then
+    USE_REMOTE_IMAGES="1"
+  else
+    USE_REMOTE_IMAGES="0"
+  fi
+fi
 PORT_FORWARD_PORT="${PORT_FORWARD_PORT:-8081}"
 PORT_FORWARD_LOG="/tmp/progress-tracker-port-forward.log"
 SERVER_IP="${SERVER_IP:-192.168.239.141}"
@@ -18,13 +33,25 @@ echo "Checking Minikube..."
 minikube status
 kubectl get nodes -o wide
 
-echo "Building Docker images..."
-docker build -t "${BACKEND_IMAGE}" -f backend/Dockerfile .
-docker build -t "${FRONTEND_IMAGE}" -f frontend/Dockerfile ./frontend
+if [ "${USE_REMOTE_IMAGES}" = "1" ]; then
+  if [ -z "${DOCKERHUB_NAMESPACE}" ]; then
+    echo "USE_REMOTE_IMAGES=1 requires DOCKERHUB_NAMESPACE."
+    exit 1
+  fi
+  echo "Using DockerHub images:"
+  echo "${BACKEND_IMAGE}"
+  echo "${FRONTEND_IMAGE}"
+  docker pull "${BACKEND_IMAGE}"
+  docker pull "${FRONTEND_IMAGE}"
+else
+  echo "Building Docker images locally..."
+  docker build -t "${BACKEND_IMAGE}" -f backend/Dockerfile .
+  docker build -t "${FRONTEND_IMAGE}" -f frontend/Dockerfile ./frontend
 
-echo "Loading images into Minikube..."
-minikube image load "${BACKEND_IMAGE}"
-minikube image load "${FRONTEND_IMAGE}"
+  echo "Loading images into Minikube..."
+  minikube image load "${BACKEND_IMAGE}"
+  minikube image load "${FRONTEND_IMAGE}"
+fi
 
 echo "Enabling ingress..."
 minikube addons enable ingress
@@ -79,9 +106,19 @@ kubectl create secret tls progress-tracker-tls \
 echo "Applying Kubernetes manifests..."
 kubectl apply -f k8s/progress-tracker.yaml
 
-echo "Restarting deployments to use the latest loaded images..."
-kubectl rollout restart deployment/progress-tracker-backend -n "${NAMESPACE}"
-kubectl rollout restart deployment/progress-tracker-frontend -n "${NAMESPACE}"
+if [ "${USE_REMOTE_IMAGES}" = "1" ]; then
+  echo "Pointing deployments at DockerHub images..."
+  kubectl set image deployment/progress-tracker-backend backend="${BACKEND_IMAGE}" -n "${NAMESPACE}"
+  kubectl set image deployment/progress-tracker-frontend frontend="${FRONTEND_IMAGE}" -n "${NAMESPACE}"
+  kubectl patch deployment progress-tracker-backend -n "${NAMESPACE}" --type=json \
+    -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Always"}]'
+  kubectl patch deployment progress-tracker-frontend -n "${NAMESPACE}" --type=json \
+    -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Always"}]'
+else
+  echo "Restarting deployments to use the latest loaded images..."
+  kubectl rollout restart deployment/progress-tracker-backend -n "${NAMESPACE}"
+  kubectl rollout restart deployment/progress-tracker-frontend -n "${NAMESPACE}"
+fi
 
 echo "Waiting for rollout..."
 kubectl rollout status deployment/progress-tracker-backend -n "${NAMESPACE}"
@@ -202,6 +239,11 @@ curl -kI --max-time 5 "https://${INGRESS_HOST}:${EFFECTIVE_HTTPS_PORT}/" || true
 cat <<EOF
 
 Deployment applied.
+
+Images:
+
+${BACKEND_IMAGE}
+${FRONTEND_IMAGE}
 
 Primary HTTPS ingress access:
 

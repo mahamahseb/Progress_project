@@ -7,6 +7,10 @@ on:
         description: "Port to expose ingress-nginx on the Minikube server"
         required: false
         default: "8081"
+      image_tag:
+        description: "Docker image tag to deploy from DockerHub"
+        required: false
+        default: "latest"
   workflow_run:
     workflows:
       - CI
@@ -33,13 +37,21 @@ jobs:
       - name: Deploy to Minikube
         env:
           PORT_FORWARD_PORT: ${{ inputs.port_forward_port || '8081' }}
+          DOCKERHUB_NAMESPACE: ${{ secrets.DOCKERHUB_USERNAME }}
+          IMAGE_TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
+          USE_REMOTE_IMAGES: ${{ secrets.DOCKERHUB_USERNAME != '' && '1' || '0' }}
         run: bash scripts/deploy-minikube.sh
 
       - name: Show access URL
         env:
           PORT_FORWARD_PORT: ${{ inputs.port_forward_port || '8081' }}
+          DOCKERHUB_NAMESPACE: ${{ secrets.DOCKERHUB_USERNAME }}
+          IMAGE_TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
         run: |
-          echo "If ingress port-forward is running, open:"
-          echo "http://progress-tracker.local:${PORT_FORWARD_PORT}/"
-          echo "Health check:"
-          echo "curl -H \"Host: progress-tracker.local\" http://127.0.0.1:${PORT_FORWARD_PORT}/health"
+          echo "Deployed DockerHub images:"
+          echo "${DOCKERHUB_NAMESPACE}/progress-tracker-backend:${IMAGE_TAG}"
+          echo "${DOCKERHUB_NAMESPACE}/progress-tracker-frontend:${IMAGE_TAG}"
+          echo "Open:"
+          echo "https://progress-tracker.192.168.239.141.sslip.io:8443/"
+          echo "Direct fallback:"
+          echo "http://192.168.239.141:${PORT_FORWARD_PORT}/"

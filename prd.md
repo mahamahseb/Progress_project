@@ -51,6 +51,7 @@
 - [x] Build frontend in CI
 - [x] Validate Kubernetes manifest in CI
 - [x] Build backend and frontend Docker images in CI without pushing
+- [x] Publish backend and frontend images to DockerHub after main branch CI succeeds
 
 ## CD Tasks
 
@@ -59,6 +60,7 @@
 - [x] Document self-hosted runner requirements
 - [x] Keep long-running ingress port-forward outside the GitHub Actions job
 - [x] Add self-hosted runner installer script
+- [x] Deploy Minikube from DockerHub images using the pushed Git commit tag
 
 ## Out of Scope for MVP
 

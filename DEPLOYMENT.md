@@ -79,6 +79,8 @@ Resource summary:
 
 ## Images
 
+### Local Minikube Images
+
 Build images locally:
 
 ```bash
@@ -100,6 +102,32 @@ imagePullPolicy: Never
 ```
 
 because the images are loaded into Minikube directly.
+
+### DockerHub Images
+
+For the `dev -> GitHub -> DockerHub -> Minikube` flow, GitHub Actions builds and pushes:
+
+```txt
+<dockerhub-username>/progress-tracker-backend:<git-sha>
+<dockerhub-username>/progress-tracker-frontend:<git-sha>
+<dockerhub-username>/progress-tracker-backend:latest
+<dockerhub-username>/progress-tracker-frontend:latest
+```
+
+Add these repository secrets in GitHub:
+
+| Secret | Purpose |
+|---|---|
+| `DOCKERHUB_USERNAME` | DockerHub username or namespace |
+| `DOCKERHUB_TOKEN` | DockerHub access token |
+
+When `DOCKERHUB_NAMESPACE` is set, `scripts/deploy-minikube.sh` uses DockerHub images instead of building images on the Minikube server:
+
+```bash
+DOCKERHUB_NAMESPACE=<dockerhub-username> IMAGE_TAG=latest USE_REMOTE_IMAGES=1 bash scripts/deploy-minikube.sh
+```
+
+The deployment workflow automatically sets `DOCKERHUB_NAMESPACE` from `DOCKERHUB_USERNAME` and deploys the Git commit SHA image after CI succeeds.
 
 The frontend uses two API base settings:
 
@@ -123,6 +151,16 @@ Actions -> Deploy to Minikube -> Run workflow
 ```
 
 This requires a self-hosted Linux runner on the Minikube server.
+
+For the DockerHub pipeline:
+
+```txt
+dev push to main
+  -> GitHub Actions CI
+  -> DockerHub publish
+  -> Deploy to Minikube workflow
+  -> Minikube pulls DockerHub images
+```
 
 Install the runner on the Minikube server:
 
