@@ -158,6 +158,12 @@ If the GitHub Actions runner cannot bind port `443` because sudo requires a pass
 sudo kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 443:443
 ```
 
+For persistent HTTPS access on the Minikube server, install the systemd service:
+
+```bash
+bash scripts/install-ingress-https-service.sh
+```
+
 If the runner cannot bind `443`, the deployment script falls back to `8443`:
 
 ```txt
