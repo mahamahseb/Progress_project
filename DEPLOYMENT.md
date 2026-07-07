@@ -24,7 +24,7 @@ The Minikube deployment uses:
 
 ```txt
 Browser
-  -> https://<server-ip>
+  -> https://progress-tracker.local
   -> NGINX Ingress Controller
   -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
@@ -61,7 +61,7 @@ Resource summary:
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
 | Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
-| Ingress | `progress-tracker` | `progress-tracker` | Routes HTTPS IP access to the frontend service |
+| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.local` HTTPS access to the frontend service |
 
 ## Images
 
@@ -129,18 +129,18 @@ kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 Open the dashboard through HTTPS ingress after deployment:
 
 ```txt
-https://<server-ip>/
+https://progress-tracker.local/
 ```
 
-For the current Minikube server:
+For browser access from another machine, map `progress-tracker.local` to the Minikube server IP:
 
 ```txt
-https://192.168.239.141/
+192.168.239.141 progress-tracker.local
 ```
 
-The deployment script creates a self-signed TLS certificate for `192.168.239.141`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
+The deployment script creates a self-signed TLS certificate for `progress-tracker.local`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
 
-Because this is an IP-based self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
+Because this is a self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
 
 If the GitHub Actions runner cannot bind port `443` because sudo requires a password, run this on the Minikube server:
 
@@ -152,7 +152,7 @@ Test:
 
 ```bash
 curl -kI https://127.0.0.1/
-curl -kI https://192.168.239.141/
+curl -kI -H "Host: progress-tracker.local" https://192.168.239.141/
 ```
 
 Direct port-forward fallback:

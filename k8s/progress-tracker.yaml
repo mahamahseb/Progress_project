@@ -162,9 +162,12 @@ metadata:
 spec:
   ingressClassName: nginx
   tls:
-    - secretName: progress-tracker-tls
+    - hosts:
+        - progress-tracker.local
+      secretName: progress-tracker-tls
   rules:
-    - http:
+    - host: progress-tracker.local
+      http:
         paths:
           - path: /
             pathType: Prefix

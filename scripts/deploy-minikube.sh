@@ -7,6 +7,7 @@ FRONTEND_IMAGE="progress-tracker-frontend:latest"
 PORT_FORWARD_PORT="${PORT_FORWARD_PORT:-8081}"
 PORT_FORWARD_LOG="/tmp/progress-tracker-port-forward.log"
 SERVER_IP="${SERVER_IP:-192.168.239.141}"
+INGRESS_HOST="${INGRESS_HOST:-progress-tracker.local}"
 HTTPS_PORT="${HTTPS_PORT:-443}"
 HTTPS_FORWARD_LOG="/tmp/progress-tracker-https-port-forward.log"
 
@@ -26,13 +27,13 @@ echo "Enabling ingress..."
 minikube addons enable ingress
 kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
 
-echo "Preparing TLS certificate for https://${SERVER_IP}..."
+echo "Preparing TLS certificate for https://${INGRESS_HOST}..."
 kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1 || kubectl create namespace "${NAMESPACE}"
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /tmp/progress-tracker-tls.key \
   -out /tmp/progress-tracker-tls.crt \
-  -subj "/CN=${SERVER_IP}" \
-  -addext "subjectAltName = IP:${SERVER_IP}"
+  -subj "/CN=${INGRESS_HOST}" \
+  -addext "subjectAltName = DNS:${INGRESS_HOST}"
 kubectl create secret tls progress-tracker-tls \
   -n "${NAMESPACE}" \
   --cert=/tmp/progress-tracker-tls.crt \
@@ -134,7 +135,7 @@ else
 
   for attempt in 1 2 3 4 5; do
     sleep 2
-    if curl -kfsS "https://127.0.0.1:${HTTPS_PORT}/" >/dev/null; then
+    if curl -kfsS -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${HTTPS_PORT}/" >/dev/null; then
       break
     fi
     if [ "${attempt}" = "5" ]; then
@@ -159,16 +160,20 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 echo "HTTPS access check:"
-curl -kI --max-time 5 "https://127.0.0.1:${HTTPS_PORT}/" || true
-curl -kI --max-time 5 "https://${SERVER_IP}:${HTTPS_PORT}/" || true
+curl -kI --max-time 5 -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${HTTPS_PORT}/" || true
+curl -kI --max-time 5 -H "Host: ${INGRESS_HOST}" "https://${SERVER_IP}:${HTTPS_PORT}/" || true
 
 cat <<EOF
 
 Deployment applied.
 
-Primary HTTPS access:
+Primary HTTPS ingress access:
 
-https://${SERVER_IP}/
+https://${INGRESS_HOST}/
+
+Map this host to the server IP on your browser machine:
+
+${SERVER_IP} ${INGRESS_HOST}
 
 Direct IP access:
 
