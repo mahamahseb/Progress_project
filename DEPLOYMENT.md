@@ -24,7 +24,7 @@ The Minikube deployment uses:
 
 ```txt
 Browser
-  -> https://progress-tracker.local
+  -> https://progress-tracker.192.168.239.141.sslip.io
   -> NGINX Ingress Controller
   -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
@@ -61,7 +61,7 @@ Resource summary:
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
 | Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
-| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.local` HTTPS access to the frontend service |
+| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.192.168.239.141.sslip.io` HTTPS access to the frontend service |
 
 ## Images
 
@@ -129,16 +129,12 @@ kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 Open the dashboard through HTTPS ingress after deployment:
 
 ```txt
-https://progress-tracker.local/
+https://progress-tracker.192.168.239.141.sslip.io/
 ```
 
-For browser access from another machine, map `progress-tracker.local` to the Minikube server IP:
+This `sslip.io` hostname resolves to `192.168.239.141`, so no local hosts-file edit is required.
 
-```txt
-192.168.239.141 progress-tracker.local
-```
-
-The deployment script creates a self-signed TLS certificate for `progress-tracker.local`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
+The deployment script creates a self-signed TLS certificate for `progress-tracker.192.168.239.141.sslip.io`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
 
 Because this is a self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
 
@@ -148,11 +144,17 @@ If the GitHub Actions runner cannot bind port `443` because sudo requires a pass
 sudo kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 443:443
 ```
 
+If the runner cannot bind `443`, the deployment script falls back to `8443`:
+
+```txt
+https://progress-tracker.192.168.239.141.sslip.io:8443/
+```
+
 Test:
 
 ```bash
 curl -kI https://127.0.0.1/
-curl -kI -H "Host: progress-tracker.local" https://192.168.239.141/
+curl -kI https://progress-tracker.192.168.239.141.sslip.io/
 ```
 
 Direct port-forward fallback:
