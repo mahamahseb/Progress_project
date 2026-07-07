@@ -9,6 +9,8 @@ __pycache__/
 .env
 *.db
 .docker-config/
+.tools/
+.tools-gh-release.json
 .ssh-known/
 .npm-cache/
 .pnpm-store/
