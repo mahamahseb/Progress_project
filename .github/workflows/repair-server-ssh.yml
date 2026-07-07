@@ -1,0 +1,68 @@
+name: Repair Server SSH
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/repair-server-ssh.yml
+
+jobs:
+  repair-ssh:
+    name: Repair SSH on Minikube server
+    runs-on:
+      - self-hosted
+      - linux
+    steps:
+      - name: Check server identity
+        run: |
+          hostname
+          id
+          ip addr show || true
+
+      - name: Check SSH packages and service
+        run: |
+          set -x
+          command -v sshd || true
+          systemctl status ssh --no-pager || true
+          systemctl status sshd --no-pager || true
+
+      - name: Start SSH service when sudo is available
+        run: |
+          set -eux
+          if ! sudo -n true >/dev/null 2>&1; then
+            echo "sudo requires a password; cannot repair SSH automatically from GitHub Actions."
+            echo "Run on the Minikube server:"
+            echo "sudo apt-get update && sudo apt-get install -y openssh-server"
+            echo "sudo systemctl enable --now ssh"
+            echo "sudo ufw allow 22/tcp"
+            exit 1
+          fi
+
+          if ! command -v sshd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y openssh-server
+          fi
+
+          if systemctl list-unit-files | grep -q '^ssh.service'; then
+            sudo systemctl enable --now ssh
+            sudo systemctl restart ssh
+          elif systemctl list-unit-files | grep -q '^sshd.service'; then
+            sudo systemctl enable --now sshd
+            sudo systemctl restart sshd
+          else
+            echo "No ssh/sshd systemd service found after install."
+            exit 1
+          fi
+
+          if command -v ufw >/dev/null 2>&1; then
+            sudo ufw allow 22/tcp || true
+            sudo ufw status || true
+          fi
+
+      - name: Verify SSH port
+        run: |
+          set -x
+          ss -ltnp | grep ':22 ' || true
+          systemctl status ssh --no-pager || true
+          systemctl status sshd --no-pager || true
