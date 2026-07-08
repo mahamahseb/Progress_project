@@ -11,7 +11,7 @@ export default async function DashboardPage() {
       <header className="pageHeader">
         <div>
           <p className="eyebrow">Progress Tracker</p>
-          <h1 className="dashboardTitle">แดชบอร์ดติดตามความคืบหน้าโปรเจกต์</h1>
+          <h1 className="dashboardTitle">ระบบติดตาม project</h1>
         </div>
       </header>
       <ProjectCreateForm />
