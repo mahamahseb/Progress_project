@@ -25,6 +25,10 @@ The Minikube deployment uses:
 ```txt
 Browser
   -> https://progress-tracker.192.168.239.141.sslip.io
+  -> https://progress-tracker.mah.com
+  -> lab1:443
+  -> socat forwarder
+  -> minikube ingress: 192.168.49.2:443
   -> NGINX Ingress Controller
   -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
@@ -35,11 +39,13 @@ The shared NGINX Ingress Controller routes each namespace by hostname:
 
 ```txt
 https://hello.192.168.239.141.sslip.io
+https://hello.mah.com
   -> ingress-nginx
   -> namespace: hello-world
   -> ingress: hello-world
 
 https://progress-tracker.192.168.239.141.sslip.io
+https://progress-tracker.mah.com
   -> ingress-nginx
   -> namespace: progress-tracker
   -> ingress: progress-tracker
@@ -75,7 +81,7 @@ Resource summary:
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
 | Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
-| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.192.168.239.141.sslip.io` HTTPS access to the frontend service |
+| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.192.168.239.141.sslip.io` and `progress-tracker.mah.com` HTTPS access to the frontend service |
 
 ## Images
 
@@ -182,11 +188,13 @@ Open the dashboard through HTTPS ingress after deployment:
 
 ```txt
 https://progress-tracker.192.168.239.141.sslip.io/
+https://progress-tracker.mah.com/
 ```
 
 This `sslip.io` hostname resolves to `192.168.239.141`, so no local hosts-file edit is required.
+The `mah.com` lab hostname must resolve through lab1 BIND DNS or a local hosts-file entry to `192.168.239.141`.
 
-The deployment script moves the existing `hello-world` ingress to `hello.192.168.239.141.sslip.io`, creates a self-signed TLS certificate for `progress-tracker.192.168.239.141.sslip.io`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
+The deployment script moves the existing `hello-world` ingress to `hello.192.168.239.141.sslip.io` and `hello.mah.com`, creates a self-signed TLS certificate for both Progress Tracker hostnames, configures the Ingress TLS secret, and expects server port `443` to forward to the NGINX Ingress Controller through the lab1 ingress forwarding service.
 
 Because this is a self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
 
@@ -208,11 +216,14 @@ If the runner cannot bind `443`, the deployment script falls back to `8443`:
 https://progress-tracker.192.168.239.141.sslip.io:8443/
 ```
 
+In the current lab1 architecture, the preferred persistent path is `lab1:443 -> socat -> minikube ingress 192.168.49.2:443`, not the fallback `8443` path.
+
 Test:
 
 ```bash
 curl -kI https://127.0.0.1/
 curl -kI https://progress-tracker.192.168.239.141.sslip.io/
+curl -kI https://progress-tracker.mah.com/
 ```
 
 Direct port-forward fallback:
