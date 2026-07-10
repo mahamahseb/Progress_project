@@ -52,6 +52,7 @@ jobs:
           echo "${DOCKERHUB_NAMESPACE}/progress-tracker-backend:${IMAGE_TAG}"
           echo "${DOCKERHUB_NAMESPACE}/progress-tracker-frontend:${IMAGE_TAG}"
           echo "Open:"
-          echo "https://progress-tracker.192.168.239.141.sslip.io:8443/"
+          echo "https://progress-tracker.192.168.239.141.sslip.io/"
+          echo "https://progress-tracker.mah.com/"
           echo "Direct fallback:"
           echo "http://192.168.239.141:${PORT_FORWARD_PORT}/"
