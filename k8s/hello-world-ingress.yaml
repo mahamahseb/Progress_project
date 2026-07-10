@@ -8,9 +8,20 @@ spec:
   tls:
     - hosts:
         - hello.192.168.239.141.sslip.io
+        - hello.mah.com
       secretName: hello-world-tls
   rules:
     - host: hello.192.168.239.141.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hello-world
+                port:
+                  number: 80
+    - host: hello.mah.com
       http:
         paths:
           - path: /
