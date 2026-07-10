@@ -164,9 +164,20 @@ spec:
   tls:
     - hosts:
         - progress-tracker.192.168.239.141.sslip.io
+        - progress-tracker.mah.com
       secretName: progress-tracker-tls
   rules:
     - host: progress-tracker.192.168.239.141.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: progress-tracker-frontend
+                port:
+                  number: 3000
+    - host: progress-tracker.mah.com
       http:
         paths:
           - path: /
