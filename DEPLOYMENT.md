@@ -150,6 +150,20 @@ From the project root on the Minikube server, run:
 bash scripts/deploy-minikube.sh
 ```
 
+By default, the app deploy script assumes the lab1 ingress infrastructure is already running:
+
+```txt
+lab1:80  -> socat -> minikube ingress 192.168.49.2:80
+lab1:443 -> socat -> minikube ingress 192.168.49.2:443
+```
+
+The app deploy does not start long-running port-forwarders unless explicitly requested:
+
+```bash
+MANAGE_DIRECT_PORT_FORWARD=1 bash scripts/deploy-minikube.sh
+MANAGE_HTTPS_FORWARDER=1 bash scripts/deploy-minikube.sh
+```
+
 Or run the manual GitHub Actions deployment workflow:
 
 ```txt
