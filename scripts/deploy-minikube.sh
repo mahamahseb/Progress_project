@@ -23,9 +23,11 @@ PORT_FORWARD_PORT="${PORT_FORWARD_PORT:-8081}"
 PORT_FORWARD_LOG="/tmp/progress-tracker-port-forward.log"
 SERVER_IP="${SERVER_IP:-192.168.239.141}"
 INGRESS_HOST="${INGRESS_HOST:-progress-tracker.192.168.239.141.sslip.io}"
+INGRESS_ALT_HOST="${INGRESS_ALT_HOST:-progress-tracker.mah.com}"
 HELLO_WORLD_NAMESPACE="${HELLO_WORLD_NAMESPACE:-hello-world}"
 HELLO_WORLD_INGRESS="${HELLO_WORLD_INGRESS:-hello-world}"
 HELLO_WORLD_HOST="${HELLO_WORLD_HOST:-hello.192.168.239.141.sslip.io}"
+HELLO_WORLD_ALT_HOST="${HELLO_WORLD_ALT_HOST:-hello.mah.com}"
 HTTPS_PORT="${HTTPS_PORT:-443}"
 HTTPS_FORWARD_LOG="/tmp/progress-tracker-https-port-forward.log"
 
@@ -59,12 +61,12 @@ kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
 
 echo "Ensuring hello-world ingress uses a dedicated host..."
 if kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" >/dev/null 2>&1; then
-  echo "Preparing TLS certificate for https://${HELLO_WORLD_HOST}..."
+  echo "Preparing TLS certificate for https://${HELLO_WORLD_HOST} and https://${HELLO_WORLD_ALT_HOST}..."
   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /tmp/hello-world-tls.key \
     -out /tmp/hello-world-tls.crt \
     -subj "/CN=${HELLO_WORLD_HOST}" \
-    -addext "subjectAltName = DNS:${HELLO_WORLD_HOST}"
+    -addext "subjectAltName = DNS:${HELLO_WORLD_HOST},DNS:${HELLO_WORLD_ALT_HOST}"
   kubectl create secret tls hello-world-tls \
     -n "${HELLO_WORLD_NAMESPACE}" \
     --cert=/tmp/hello-world-tls.crt \
@@ -75,28 +77,34 @@ if kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" >/
     -n "${HELLO_WORLD_NAMESPACE}" \
     --type=json \
     -p="[
-      {\"op\":\"add\",\"path\":\"/spec/rules/0/host\",\"value\":\"${HELLO_WORLD_HOST}\"},
-      {\"op\":\"add\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
+      {\"op\":\"replace\",\"path\":\"/spec/rules\",\"value\":[
+        {\"host\":\"${HELLO_WORLD_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}},
+        {\"host\":\"${HELLO_WORLD_ALT_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}}
+      ]},
+      {\"op\":\"add\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\",\"${HELLO_WORLD_ALT_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
     ]" || \
   kubectl patch ingress "${HELLO_WORLD_INGRESS}" \
     -n "${HELLO_WORLD_NAMESPACE}" \
     --type=json \
     -p="[
-      {\"op\":\"replace\",\"path\":\"/spec/rules/0/host\",\"value\":\"${HELLO_WORLD_HOST}\"},
-      {\"op\":\"replace\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
+      {\"op\":\"replace\",\"path\":\"/spec/rules\",\"value\":[
+        {\"host\":\"${HELLO_WORLD_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}},
+        {\"host\":\"${HELLO_WORLD_ALT_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}}
+      ]},
+      {\"op\":\"replace\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\",\"${HELLO_WORLD_ALT_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
     ]"
   kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" -o wide
 else
   echo "No ${HELLO_WORLD_NAMESPACE}/${HELLO_WORLD_INGRESS} ingress found; skipping hello-world ingress update."
 fi
 
-echo "Preparing TLS certificate for https://${INGRESS_HOST}..."
+echo "Preparing TLS certificate for https://${INGRESS_HOST} and https://${INGRESS_ALT_HOST}..."
 kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1 || kubectl create namespace "${NAMESPACE}"
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /tmp/progress-tracker-tls.key \
   -out /tmp/progress-tracker-tls.crt \
   -subj "/CN=${INGRESS_HOST}" \
-  -addext "subjectAltName = DNS:${INGRESS_HOST}"
+  -addext "subjectAltName = DNS:${INGRESS_HOST},DNS:${INGRESS_ALT_HOST}"
 kubectl create secret tls progress-tracker-tls \
   -n "${NAMESPACE}" \
   --cert=/tmp/progress-tracker-tls.crt \
@@ -183,45 +191,56 @@ curl -I --max-time 5 "http://127.0.0.1:${PORT_FORWARD_PORT}/" || true
 curl -I --max-time 5 "http://192.168.239.141:${PORT_FORWARD_PORT}/" || true
 
 EFFECTIVE_HTTPS_PORT="${HTTPS_PORT}"
-if [ "${HTTPS_PORT}" = "443" ] && ! sudo -n true >/dev/null 2>&1; then
-  EFFECTIVE_HTTPS_PORT="8443"
-  echo "sudo requires a password, so HTTPS will use fallback port ${EFFECTIVE_HTTPS_PORT}."
+HTTPS_URL_SUFFIX=""
+if [ "${EFFECTIVE_HTTPS_PORT}" != "443" ]; then
+  HTTPS_URL_SUFFIX=":${EFFECTIVE_HTTPS_PORT}"
 fi
 
-echo "Starting HTTPS ingress access on port ${EFFECTIVE_HTTPS_PORT}..."
-existing_https_pids="$(pgrep -f "[k]ubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller ${EFFECTIVE_HTTPS_PORT}:443" || true)"
-if [ -n "${existing_https_pids}" ]; then
-  kill ${existing_https_pids} || true
-  sleep 2
-fi
-
-if [ "${EFFECTIVE_HTTPS_PORT}" = "443" ]; then
-  HTTPS_FORWARD_CMD=(sudo -E env "KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}" kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller "${EFFECTIVE_HTTPS_PORT}:443")
+echo "Checking existing HTTPS ingress access on port ${EFFECTIVE_HTTPS_PORT}..."
+if curl -kfsS -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" >/dev/null; then
+  echo "Existing HTTPS ingress access is ready on port ${EFFECTIVE_HTTPS_PORT}; reusing it."
 else
-  HTTPS_FORWARD_CMD=(kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller "${EFFECTIVE_HTTPS_PORT}:443")
-fi
-
-if command -v setsid >/dev/null 2>&1; then
-  env -u RUNNER_TRACKING_ID setsid nohup "${HTTPS_FORWARD_CMD[@]}" > "${HTTPS_FORWARD_LOG}" 2>&1 < /dev/null &
-else
-  env -u RUNNER_TRACKING_ID nohup "${HTTPS_FORWARD_CMD[@]}" > "${HTTPS_FORWARD_LOG}" 2>&1 < /dev/null &
-fi
-
-for attempt in 1 2 3 4 5; do
-  sleep 2
-  if curl -kfsS -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" >/dev/null; then
-    break
+  if [ "${HTTPS_PORT}" = "443" ] && ! sudo -n true >/dev/null 2>&1; then
+    EFFECTIVE_HTTPS_PORT="8443"
+    HTTPS_URL_SUFFIX=":${EFFECTIVE_HTTPS_PORT}"
+    echo "sudo requires a password and port 443 is not ready, so HTTPS will use fallback port ${EFFECTIVE_HTTPS_PORT}."
   fi
-  if [ "${attempt}" = "5" ]; then
-    echo "HTTPS ingress did not become ready on 127.0.0.1:${EFFECTIVE_HTTPS_PORT}"
-    cat "${HTTPS_FORWARD_LOG}" || true
-    exit 1
-  fi
-done
 
-echo "HTTPS ingress port-forward status:"
-pgrep -af "[k]ubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller ${EFFECTIVE_HTTPS_PORT}:443" || true
-cat "${HTTPS_FORWARD_LOG}" || true
+  echo "Starting HTTPS ingress access on port ${EFFECTIVE_HTTPS_PORT}..."
+  existing_https_pids="$(pgrep -f "[k]ubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller ${EFFECTIVE_HTTPS_PORT}:443" || true)"
+  if [ -n "${existing_https_pids}" ]; then
+    kill ${existing_https_pids} || true
+    sleep 2
+  fi
+
+  if [ "${EFFECTIVE_HTTPS_PORT}" = "443" ]; then
+    HTTPS_FORWARD_CMD=(sudo -E env "KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}" kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller "${EFFECTIVE_HTTPS_PORT}:443")
+  else
+    HTTPS_FORWARD_CMD=(kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller "${EFFECTIVE_HTTPS_PORT}:443")
+  fi
+
+  if command -v setsid >/dev/null 2>&1; then
+    env -u RUNNER_TRACKING_ID setsid nohup "${HTTPS_FORWARD_CMD[@]}" > "${HTTPS_FORWARD_LOG}" 2>&1 < /dev/null &
+  else
+    env -u RUNNER_TRACKING_ID nohup "${HTTPS_FORWARD_CMD[@]}" > "${HTTPS_FORWARD_LOG}" 2>&1 < /dev/null &
+  fi
+
+  for attempt in 1 2 3 4 5; do
+    sleep 2
+    if curl -kfsS -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" >/dev/null; then
+      break
+    fi
+    if [ "${attempt}" = "5" ]; then
+      echo "HTTPS ingress did not become ready on 127.0.0.1:${EFFECTIVE_HTTPS_PORT}"
+      cat "${HTTPS_FORWARD_LOG}" || true
+      exit 1
+    fi
+  done
+
+  echo "HTTPS ingress port-forward status:"
+  pgrep -af "[k]ubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller ${EFFECTIVE_HTTPS_PORT}:443" || true
+  cat "${HTTPS_FORWARD_LOG}" || true
+fi
 
 if command -v ufw >/dev/null 2>&1; then
   if sudo -n true >/dev/null 2>&1; then
@@ -234,7 +253,9 @@ fi
 
 echo "HTTPS access check:"
 curl -kI --max-time 5 -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" || true
+curl -kI --max-time 5 -H "Host: ${INGRESS_ALT_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" || true
 curl -kI --max-time 5 "https://${INGRESS_HOST}:${EFFECTIVE_HTTPS_PORT}/" || true
+curl -kI --max-time 5 "https://${INGRESS_ALT_HOST}:${EFFECTIVE_HTTPS_PORT}/" || true
 
 cat <<EOF
 
@@ -247,13 +268,15 @@ ${FRONTEND_IMAGE}
 
 Primary HTTPS ingress access:
 
-https://${INGRESS_HOST}:${EFFECTIVE_HTTPS_PORT}/
+https://${INGRESS_HOST}${HTTPS_URL_SUFFIX}/
+https://${INGRESS_ALT_HOST}${HTTPS_URL_SUFFIX}/
 
 This sslip.io hostname resolves to ${SERVER_IP}; no hosts-file edit is required.
 
 hello-world ingress host:
 
-https://${HELLO_WORLD_HOST}:${EFFECTIVE_HTTPS_PORT}/
+https://${HELLO_WORLD_HOST}${HTTPS_URL_SUFFIX}/
+https://${HELLO_WORLD_ALT_HOST}${HTTPS_URL_SUFFIX}/
 
 Direct IP access:
 
@@ -270,6 +293,7 @@ http://<server-ip>:30081/
 Ingress host:
 
 ${INGRESS_HOST}
+${INGRESS_ALT_HOST}
 
 Direct health check:
 
