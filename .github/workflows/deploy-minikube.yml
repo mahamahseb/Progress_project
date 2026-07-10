@@ -40,6 +40,8 @@ jobs:
           DOCKERHUB_NAMESPACE: ${{ secrets.DOCKERHUB_USERNAME }}
           IMAGE_TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
           USE_REMOTE_IMAGES: ${{ secrets.DOCKERHUB_USERNAME != '' && '1' || '0' }}
+          MANAGE_DIRECT_PORT_FORWARD: "0"
+          MANAGE_HTTPS_FORWARDER: "0"
         run: bash scripts/deploy-minikube.sh
 
       - name: Show access URL
