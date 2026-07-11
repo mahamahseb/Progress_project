@@ -1,6 +1,6 @@
 # CI/CD
 
-Future CI should run:
+CI runs:
 
 - Backend tests.
 - Frontend build.
@@ -34,7 +34,8 @@ The manual Minikube deployment workflow is defined in:
 .github/workflows/deploy-minikube.yml
 ```
 
-It runs only when triggered manually with `workflow_dispatch`.
+It runs when CI on `main` succeeds, and it can also be triggered manually with
+`workflow_dispatch`.
 
 Runner requirement:
 
@@ -56,15 +57,18 @@ The deployment workflow runs:
 bash scripts/deploy-minikube.sh
 ```
 
-It builds Docker images, loads them into Minikube, applies `k8s/progress-tracker.yaml`, and waits for backend/frontend rollout.
+It pulls the DockerHub images for the target Git commit, applies
+`k8s/progress-tracker.yaml`, points the Deployments at those images, and waits
+for backend/frontend rollout.
 
-The workflow does not keep `kubectl port-forward` running forever. Start or manage port-forward separately:
+Persistent HTTP/HTTPS access is owned by the shared lab1 infrastructure layer:
 
-```bash
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8081:80
+```txt
+lab1:80  -> socat -> minikube ingress 192.168.49.2:80
+lab1:443 -> socat -> minikube ingress 192.168.49.2:443
 ```
 
-For a more permanent setup, create a systemd service for the port-forward or expose ingress through NodePort, LoadBalancer, or a reverse proxy.
+The app deployment workflow should not create or manage those shared services.
 
 ## Self-Hosted Runner Setup
 
