@@ -33,14 +33,12 @@ The following hostnames must resolve to the lab1 server IP:
 
 ```txt
 progress-tracker.mah.com -> 192.168.239.141
-hello.mah.com            -> 192.168.239.141
 ```
 
 The `sslip.io` hostnames resolve automatically:
 
 ```txt
 progress-tracker.192.168.239.141.sslip.io -> 192.168.239.141
-hello.192.168.239.141.sslip.io            -> 192.168.239.141
 ```
 
 ## Systemd Services
