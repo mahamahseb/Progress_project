@@ -9,6 +9,8 @@ __pycache__/
 .env
 *.db
 .docker-config/
+.docker-codex/
+.codex-gh/
 .tools/
 .tools-gh-release.json
 .ssh-known/
