@@ -24,10 +24,6 @@ PORT_FORWARD_LOG="/tmp/progress-tracker-port-forward.log"
 SERVER_IP="${SERVER_IP:-192.168.239.141}"
 INGRESS_HOST="${INGRESS_HOST:-progress-tracker.192.168.239.141.sslip.io}"
 INGRESS_ALT_HOST="${INGRESS_ALT_HOST:-progress-tracker.mah.com}"
-HELLO_WORLD_NAMESPACE="${HELLO_WORLD_NAMESPACE:-hello-world}"
-HELLO_WORLD_INGRESS="${HELLO_WORLD_INGRESS:-hello-world}"
-HELLO_WORLD_HOST="${HELLO_WORLD_HOST:-hello.192.168.239.141.sslip.io}"
-HELLO_WORLD_ALT_HOST="${HELLO_WORLD_ALT_HOST:-hello.mah.com}"
 HTTPS_PORT="${HTTPS_PORT:-443}"
 HTTPS_FORWARD_LOG="/tmp/progress-tracker-https-port-forward.log"
 MANAGE_DIRECT_PORT_FORWARD="${MANAGE_DIRECT_PORT_FORWARD:-0}"
@@ -57,48 +53,10 @@ else
   minikube image load "${FRONTEND_IMAGE}"
 fi
 
-echo "Enabling ingress..."
-minikube addons enable ingress
+echo "Checking shared ingress controller..."
+kubectl get namespace ingress-nginx >/dev/null
+kubectl get deployment ingress-nginx-controller -n ingress-nginx >/dev/null
 kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx
-
-echo "Ensuring hello-world ingress uses a dedicated host..."
-if kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" >/dev/null 2>&1; then
-  echo "Preparing TLS certificate for https://${HELLO_WORLD_HOST} and https://${HELLO_WORLD_ALT_HOST}..."
-  openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /tmp/hello-world-tls.key \
-    -out /tmp/hello-world-tls.crt \
-    -subj "/CN=${HELLO_WORLD_HOST}" \
-    -addext "subjectAltName = DNS:${HELLO_WORLD_HOST},DNS:${HELLO_WORLD_ALT_HOST}"
-  kubectl create secret tls hello-world-tls \
-    -n "${HELLO_WORLD_NAMESPACE}" \
-    --cert=/tmp/hello-world-tls.crt \
-    --key=/tmp/hello-world-tls.key \
-    --dry-run=client -o yaml | kubectl apply -f -
-
-  kubectl patch ingress "${HELLO_WORLD_INGRESS}" \
-    -n "${HELLO_WORLD_NAMESPACE}" \
-    --type=json \
-    -p="[
-      {\"op\":\"replace\",\"path\":\"/spec/rules\",\"value\":[
-        {\"host\":\"${HELLO_WORLD_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}},
-        {\"host\":\"${HELLO_WORLD_ALT_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}}
-      ]},
-      {\"op\":\"add\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\",\"${HELLO_WORLD_ALT_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
-    ]" || \
-  kubectl patch ingress "${HELLO_WORLD_INGRESS}" \
-    -n "${HELLO_WORLD_NAMESPACE}" \
-    --type=json \
-    -p="[
-      {\"op\":\"replace\",\"path\":\"/spec/rules\",\"value\":[
-        {\"host\":\"${HELLO_WORLD_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}},
-        {\"host\":\"${HELLO_WORLD_ALT_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"hello-world\",\"port\":{\"number\":80}}}}]}}
-      ]},
-      {\"op\":\"replace\",\"path\":\"/spec/tls\",\"value\":[{\"hosts\":[\"${HELLO_WORLD_HOST}\",\"${HELLO_WORLD_ALT_HOST}\"],\"secretName\":\"hello-world-tls\"}]}
-    ]"
-  kubectl get ingress "${HELLO_WORLD_INGRESS}" -n "${HELLO_WORLD_NAMESPACE}" -o wide
-else
-  echo "No ${HELLO_WORLD_NAMESPACE}/${HELLO_WORLD_INGRESS} ingress found; skipping hello-world ingress update."
-fi
 
 echo "Preparing TLS certificate for https://${INGRESS_HOST} and https://${INGRESS_ALT_HOST}..."
 kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1 || kubectl create namespace "${NAMESPACE}"
@@ -256,15 +214,6 @@ else
   fi
 fi
 
-if command -v ufw >/dev/null 2>&1; then
-  if sudo -n true >/dev/null 2>&1; then
-    sudo ufw allow "${EFFECTIVE_HTTPS_PORT}/tcp" || true
-  else
-    echo "Run manually on the Minikube server:"
-    echo "sudo ufw allow ${EFFECTIVE_HTTPS_PORT}/tcp"
-  fi
-fi
-
 echo "HTTPS access check:"
 curl -kI --max-time 5 -H "Host: ${INGRESS_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" || true
 curl -kI --max-time 5 -H "Host: ${INGRESS_ALT_HOST}" "https://127.0.0.1:${EFFECTIVE_HTTPS_PORT}/" || true
@@ -287,12 +236,7 @@ https://${INGRESS_ALT_HOST}${HTTPS_URL_SUFFIX}/
 
 This sslip.io hostname resolves to ${SERVER_IP}; no hosts-file edit is required.
 
-hello-world ingress host:
-
-https://${HELLO_WORLD_HOST}${HTTPS_URL_SUFFIX}/
-https://${HELLO_WORLD_ALT_HOST}${HTTPS_URL_SUFFIX}/
-
-Direct IP access:
+Optional direct IP fallback:
 
 http://<server-ip>:${PORT_FORWARD_PORT}/
 
@@ -309,7 +253,7 @@ Ingress host:
 ${INGRESS_HOST}
 ${INGRESS_ALT_HOST}
 
-Direct health check:
+Optional direct health check:
 
 curl http://127.0.0.1:${PORT_FORWARD_PORT}/health
 EOF
