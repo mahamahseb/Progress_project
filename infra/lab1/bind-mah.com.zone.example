@@ -1,0 +1,12 @@
+$TTL 86400
+@   IN  SOA lab1.mah.com. admin.mah.com. (
+        2026071001 ; serial
+        3600       ; refresh
+        1800       ; retry
+        604800     ; expire
+        86400 )    ; minimum
+
+@                 IN  NS  lab1.mah.com.
+lab1              IN  A   192.168.239.141
+progress-tracker  IN  A   192.168.239.141
+hello             IN  A   192.168.239.141

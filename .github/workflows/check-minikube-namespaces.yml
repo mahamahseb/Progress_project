@@ -1,0 +1,30 @@
+name: Check Minikube Namespaces
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-namespaces:
+    name: Check namespaces
+    runs-on:
+      - self-hosted
+      - linux
+    steps:
+      - name: Check Kubernetes context
+        run: |
+          set -eux
+          hostname
+          kubectl config current-context
+          kubectl cluster-info
+
+      - name: List namespaces
+        run: |
+          set -eux
+          kubectl get namespaces
+
+      - name: List workloads
+        run: |
+          set -eux
+          kubectl get pods -A -o wide
+          kubectl get svc -A
+          kubectl get ingress -A || true

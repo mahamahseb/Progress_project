@@ -20,11 +20,34 @@ Frontend Docker support:
 
 ## Minikube Deployment
 
+This repository owns the Progress Tracker application layer only. The lab/server
+layer is prepared separately by the platform or infrastructure owner.
+
+Shared infrastructure responsibilities:
+
+- Minikube cluster lifecycle.
+- NGINX Ingress Controller installation.
+- `lab1:80` and `lab1:443` forwarding to the Minikube ingress IP.
+- DNS records for `*.mah.com`.
+- Firewall and shared network access.
+
+Application responsibilities in this repository:
+
+- `progress-tracker` namespace.
+- Backend and frontend Deployments.
+- Backend and frontend Services.
+- Progress Tracker Ingress rules.
+- Progress Tracker TLS Secret and PVC.
+
 The Minikube deployment uses:
 
 ```txt
 Browser
   -> https://progress-tracker.192.168.239.141.sslip.io
+  -> https://progress-tracker.mah.com
+  -> lab1:443
+  -> socat forwarder
+  -> minikube ingress: 192.168.49.2:443
   -> NGINX Ingress Controller
   -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
@@ -35,11 +58,13 @@ The shared NGINX Ingress Controller routes each namespace by hostname:
 
 ```txt
 https://hello.192.168.239.141.sslip.io
+https://hello.mah.com
   -> ingress-nginx
   -> namespace: hello-world
   -> ingress: hello-world
 
 https://progress-tracker.192.168.239.141.sslip.io
+https://progress-tracker.mah.com
   -> ingress-nginx
   -> namespace: progress-tracker
   -> ingress: progress-tracker
@@ -75,7 +100,7 @@ Resource summary:
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
 | Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
-| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.192.168.239.141.sslip.io` HTTPS access to the frontend service |
+| Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.192.168.239.141.sslip.io` and `progress-tracker.mah.com` HTTPS access to the frontend service |
 
 ## Images
 
@@ -144,6 +169,20 @@ From the project root on the Minikube server, run:
 bash scripts/deploy-minikube.sh
 ```
 
+By default, the app deploy script assumes the lab1 ingress infrastructure is already running:
+
+```txt
+lab1:80  -> socat -> minikube ingress 192.168.49.2:80
+lab1:443 -> socat -> minikube ingress 192.168.49.2:443
+```
+
+The app deploy does not start long-running port-forwarders unless explicitly requested:
+
+```bash
+MANAGE_DIRECT_PORT_FORWARD=1 bash scripts/deploy-minikube.sh
+MANAGE_HTTPS_FORWARDER=1 bash scripts/deploy-minikube.sh
+```
+
 Or run the manual GitHub Actions deployment workflow:
 
 ```txt
@@ -182,37 +221,31 @@ Open the dashboard through HTTPS ingress after deployment:
 
 ```txt
 https://progress-tracker.192.168.239.141.sslip.io/
+https://progress-tracker.mah.com/
 ```
 
 This `sslip.io` hostname resolves to `192.168.239.141`, so no local hosts-file edit is required.
+The `mah.com` lab hostname must resolve through lab1 BIND DNS or a local hosts-file entry to `192.168.239.141`.
 
-The deployment script moves the existing `hello-world` ingress to `hello.192.168.239.141.sslip.io`, creates a self-signed TLS certificate for `progress-tracker.192.168.239.141.sslip.io`, configures the Ingress TLS secret, and starts an HTTPS port-forward from server port `443` to the NGINX Ingress Controller.
+The deployment script creates a self-signed TLS certificate for both Progress Tracker hostnames, configures the Progress Tracker Ingress TLS secret, and expects server port `443` to forward to the NGINX Ingress Controller through the lab1 ingress forwarding service.
 
 Because this is a self-signed certificate, the browser may show a certificate warning until the certificate is trusted on the client machine.
 
-If the GitHub Actions runner cannot bind port `443` because sudo requires a password, run this on the Minikube server:
-
-```bash
-sudo kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 443:443
-```
-
-For persistent HTTPS access on the Minikube server, install the systemd service:
-
-```bash
-bash scripts/install-ingress-https-service.sh
-```
-
-If the runner cannot bind `443`, the deployment script falls back to `8443`:
+Persistent HTTP and HTTPS access is owned by the lab1 infrastructure layer:
 
 ```txt
-https://progress-tracker.192.168.239.141.sslip.io:8443/
+lab1:80  -> socat -> minikube ingress 192.168.49.2:80
+lab1:443 -> socat -> minikube ingress 192.168.49.2:443
 ```
+
+See `infra/lab1/README.md` for the shared ingress service setup.
 
 Test:
 
 ```bash
 curl -kI https://127.0.0.1/
 curl -kI https://progress-tracker.192.168.239.141.sslip.io/
+curl -kI https://progress-tracker.mah.com/
 ```
 
 Direct port-forward fallback:

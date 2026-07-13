@@ -50,16 +50,24 @@ The frontend container uses:
 - `API_BASE_URL` for server-side calls inside the cluster.
 - `NEXT_PUBLIC_API_BASE_URL` for browser-side calls. In this ingress setup it is intentionally empty so browser requests use relative `/api` routes through the same host.
 
-## Deploy
+## Shared Infra Prerequisite
 
-Enable ingress:
+The lab/server layer owns Minikube, the NGINX Ingress Controller, DNS, firewall
+rules, and the stable `lab1:80/443` forwarding services.
+
+Check the shared ingress layer:
 
 ```bash
-minikube addons enable ingress
 kubectl get pods -n ingress-nginx
+systemctl status lab1-ingress-80.service lab1-ingress-443.service --no-pager
+ss -ltnp | grep -E ':80|:443'
 ```
 
-Or run the deployment helper from the project root on the Minikube server:
+See `infra/lab1/README.md` for the shared infrastructure setup.
+
+## Deploy
+
+Run the application deployment helper from the project root on the Minikube server:
 
 ```bash
 bash scripts/deploy-minikube.sh
@@ -89,30 +97,18 @@ kubectl get pvc -n progress-tracker
 
 ## Browser Access
 
-Forward ingress controller to server port `8081`.
-
-Use `8081` if another Minikube namespace/app is already exposed on `8080`:
-
-```bash
-kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8081:80
-```
-
-Run in background:
-
-```bash
-nohup kubectl -n ingress-nginx port-forward --address 0.0.0.0 svc/ingress-nginx-controller 8081:80 > /tmp/progress-tracker-ingress-port-forward.log 2>&1 &
-```
-
 Open:
 
 ```txt
-http://192.168.239.141:8081/
+https://progress-tracker.192.168.239.141.sslip.io/
+https://progress-tracker.mah.com/
 ```
 
 Health check:
 
 ```bash
-curl http://127.0.0.1:8081/health
+curl -kI https://progress-tracker.192.168.239.141.sslip.io/
+curl -kI https://progress-tracker.mah.com/
 ```
 
 ## Common Commands
@@ -132,5 +128,5 @@ kubectl logs -n progress-tracker <pod-name>
 
 - The backend stores SQLite data at `/data/progress_tracker.db`.
 - The manifest creates a PVC named `progress-tracker-data`.
-- `port-forward` is not permanent. Restart it after server reboot or process exit.
-- For production-like usage, expose ingress through NodePort, LoadBalancer, or a reverse proxy instead of manual port-forward.
+- Persistent access should use the shared lab1 ingress services, not manual `kubectl port-forward`.
+- NodePort and direct port-forward are fallback paths only.
