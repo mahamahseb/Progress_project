@@ -8,10 +8,12 @@ import { apiBaseUrl } from "@/shared/api/client";
 export function ProjectCreateForm() {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("saving");
+    setErrorMessage("");
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -22,13 +24,22 @@ export function ProjectCreateForm() {
       prd_path: String(formData.get("prd_path") ?? "prd.md"),
     };
 
-    const response = await fetch(`${apiBaseUrl}/api/projects`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${apiBaseUrl}/api/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      setErrorMessage("Cannot reach API");
+      setStatus("error");
+      return;
+    }
 
     if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setErrorMessage(body?.detail ?? `Request failed with status ${response.status}`);
       setStatus("error");
       return;
     }
@@ -64,7 +75,7 @@ export function ProjectCreateForm() {
         </button>
         <span className="projectMeta">
           {status === "saved" && "Project added"}
-          {status === "error" && "Could not add project"}
+          {status === "error" && (errorMessage || "Could not add project")}
         </span>
       </div>
     </form>
