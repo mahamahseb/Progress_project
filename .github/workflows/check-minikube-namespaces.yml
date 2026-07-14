@@ -36,6 +36,16 @@ jobs:
           kubectl get pods -n "${namespace}" -o wide
           kubectl get svc -n "${namespace}"
           kubectl get ingress -n "${namespace}" -o wide
+          kubectl get deployment progress-tracker-frontend -n "${namespace}" -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+          kubectl get deployment progress-tracker-frontend -n "${namespace}" -o jsonpath='{.spec.template.spec.containers[0].env}{"\n"}'
+
+          echo "Frontend built version markers:"
+          kubectl exec -n "${namespace}" deploy/progress-tracker-frontend -- \
+            sh -c "printenv | grep -E 'APP_VERSION|NEXT_PUBLIC_APP_VERSION' && grep -R 'Version:\\|appFooter' -n /app/.next/server /app/.next/static 2>/dev/null | head -20 || true"
+
+          echo "Frontend service HTML version markers:"
+          kubectl run version-check -n "${namespace}" --rm -i --restart=Never --image=curlimages/curl:8.16.0 -- \
+            curl -sS http://progress-tracker-frontend:3000/ | grep -E 'Version:|appFooter' || true
 
           echo "Backend health:"
           kubectl exec -n "${namespace}" deploy/progress-tracker-backend -- \
