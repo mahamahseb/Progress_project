@@ -26,6 +26,8 @@
 - [x] แสดงรายละเอียด project และ task list
 - [x] เตรียม GitHub Actions example
 
+- [x] Show deployed app version at the bottom of the dashboard
+
 ## Documentation Standard Tasks
 
 - [x] Rename repository source-of-truth PRD to `PRD.md`

@@ -40,6 +40,7 @@ jobs:
           PORT_FORWARD_PORT: ${{ inputs.port_forward_port || '8081' }}
           DOCKERHUB_NAMESPACE: ${{ secrets.DOCKERHUB_USERNAME }}
           IMAGE_TAG: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
+          APP_VERSION: ${{ inputs.image_tag || github.event.workflow_run.head_sha || github.sha }}
           USE_REMOTE_IMAGES: ${{ secrets.DOCKERHUB_USERNAME != '' && '1' || '0' }}
           MANAGE_DIRECT_PORT_FORWARD: "0"
           MANAGE_HTTPS_FORWARDER: "0"

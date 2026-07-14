@@ -126,7 +126,7 @@ jobs:
         run: docker build -t progress-tracker-backend:ci -f backend/Dockerfile .
 
       - name: Build frontend image
-        run: docker build -t progress-tracker-frontend:ci -f frontend/Dockerfile ./frontend
+        run: docker build --build-arg APP_VERSION="${GITHUB_SHA}" -t progress-tracker-frontend:ci -f frontend/Dockerfile ./frontend
 
   dockerhub-publish:
     name: Publish images to DockerHub
@@ -174,6 +174,7 @@ jobs:
         if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         run: |
           docker build \
+            --build-arg APP_VERSION="${GITHUB_SHA}" \
             -t "${DOCKERHUB_USERNAME}/progress-tracker-frontend:latest" \
             -t "${DOCKERHUB_USERNAME}/progress-tracker-frontend:${GITHUB_SHA}" \
             -f frontend/Dockerfile ./frontend

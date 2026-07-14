@@ -209,6 +209,14 @@ button:disabled {
   font-weight: 700;
 }
 
+.appFooter {
+  margin-top: 32px;
+  padding-top: 16px;
+  color: #5a6675;
+  font-size: 12px;
+  border-top: 1px solid #dfe4ea;
+}
+
 @media (max-width: 640px) {
   .pageHeader {
     align-items: flex-start;

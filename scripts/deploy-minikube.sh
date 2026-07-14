@@ -5,6 +5,7 @@ NAMESPACE="${NAMESPACE:-progress-tracker}"
 DOCKERHUB_NAMESPACE="${DOCKERHUB_NAMESPACE:-}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 USE_REMOTE_IMAGES="${USE_REMOTE_IMAGES:-}"
+APP_VERSION="${APP_VERSION:-${GITHUB_SHA:-local}}"
 if [ -n "${DOCKERHUB_NAMESPACE}" ]; then
   BACKEND_IMAGE="${BACKEND_IMAGE:-${DOCKERHUB_NAMESPACE}/progress-tracker-backend:${IMAGE_TAG}}"
   FRONTEND_IMAGE="${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE}/progress-tracker-frontend:${IMAGE_TAG}}"
@@ -47,7 +48,7 @@ if [ "${USE_REMOTE_IMAGES}" = "1" ]; then
 else
   echo "Building Docker images locally..."
   docker build -t "${BACKEND_IMAGE}" -f backend/Dockerfile .
-  docker build -t "${FRONTEND_IMAGE}" -f frontend/Dockerfile ./frontend
+  docker build --build-arg "APP_VERSION=${APP_VERSION}" -t "${FRONTEND_IMAGE}" -f frontend/Dockerfile ./frontend
 
   echo "Loading images into Minikube..."
   minikube image load "${BACKEND_IMAGE}"
@@ -105,12 +106,14 @@ if [ "${USE_REMOTE_IMAGES}" = "1" ]; then
   echo "Pointing deployments at DockerHub images..."
   kubectl set image deployment/progress-tracker-backend backend="${BACKEND_IMAGE}" -n "${NAMESPACE}"
   kubectl set image deployment/progress-tracker-frontend frontend="${FRONTEND_IMAGE}" -n "${NAMESPACE}"
+  kubectl set env deployment/progress-tracker-frontend "APP_VERSION=${APP_VERSION}" "NEXT_PUBLIC_APP_VERSION=${APP_VERSION}" -n "${NAMESPACE}"
   kubectl patch deployment progress-tracker-backend -n "${NAMESPACE}" --type=json \
     -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Always"}]'
   kubectl patch deployment progress-tracker-frontend -n "${NAMESPACE}" --type=json \
     -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Always"}]'
 else
   echo "Restarting deployments to use the latest loaded images..."
+  kubectl set env deployment/progress-tracker-frontend "APP_VERSION=${APP_VERSION}" "NEXT_PUBLIC_APP_VERSION=${APP_VERSION}" -n "${NAMESPACE}"
   kubectl rollout restart deployment/progress-tracker-backend -n "${NAMESPACE}"
   kubectl rollout restart deployment/progress-tracker-frontend -n "${NAMESPACE}"
 fi

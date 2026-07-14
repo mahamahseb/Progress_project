@@ -118,7 +118,7 @@ jobs:
         run: docker build -t progress-tracker-backend:branch-ci -f backend/Dockerfile .
 
       - name: Build frontend image
-        run: docker build -t progress-tracker-frontend:branch-ci -f frontend/Dockerfile ./frontend
+        run: docker build --build-arg APP_VERSION="${GITHUB_SHA}" -t progress-tracker-frontend:branch-ci -f frontend/Dockerfile ./frontend
 
   deploy-branch:
     name: Deploy branch to Minikube
@@ -148,6 +148,7 @@ jobs:
         env:
           NAMESPACE: branch-progress-tracker
           USE_REMOTE_IMAGES: "0"
+          APP_VERSION: ${{ github.sha }}
           INGRESS_HOST: branch-progress-tracker.192.168.239.141.sslip.io
           INGRESS_ALT_HOST: branch-progress-tracker.mah.com
           NODE_PORT: "30082"
