@@ -150,6 +150,7 @@ jobs:
           USE_REMOTE_IMAGES: "0"
           INGRESS_HOST: branch-progress-tracker.192.168.239.141.sslip.io
           INGRESS_ALT_HOST: branch-progress-tracker.mah.com
+          NODE_PORT: "30082"
           MANAGE_DIRECT_PORT_FORWARD: "0"
           MANAGE_HTTPS_FORWARDER: "0"
         run: bash scripts/deploy-minikube.sh

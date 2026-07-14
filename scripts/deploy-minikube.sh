@@ -20,6 +20,7 @@ if [ -z "${USE_REMOTE_IMAGES}" ]; then
   fi
 fi
 PORT_FORWARD_PORT="${PORT_FORWARD_PORT:-8081}"
+NODE_PORT="${NODE_PORT:-30081}"
 PORT_FORWARD_LOG="/tmp/progress-tracker-port-forward.log"
 SERVER_IP="${SERVER_IP:-192.168.239.141}"
 INGRESS_HOST="${INGRESS_HOST:-progress-tracker.192.168.239.141.sslip.io}"
@@ -73,7 +74,7 @@ kubectl create secret tls progress-tracker-tls \
 
 echo "Applying Kubernetes manifests..."
 MANIFEST_PATH="$(mktemp)"
-export NAMESPACE INGRESS_HOST INGRESS_ALT_HOST MANIFEST_PATH
+export NAMESPACE INGRESS_HOST INGRESS_ALT_HOST MANIFEST_PATH NODE_PORT
 python3 - <<'PY'
 import os
 from pathlib import Path
@@ -81,6 +82,7 @@ from pathlib import Path
 namespace = os.environ["NAMESPACE"]
 ingress_host = os.environ["INGRESS_HOST"]
 ingress_alt_host = os.environ["INGRESS_ALT_HOST"]
+node_port = os.environ["NODE_PORT"]
 manifest_path = Path(os.environ["MANIFEST_PATH"])
 source_path = Path("k8s/progress-tracker.yaml")
 
@@ -93,6 +95,7 @@ text = text.replace(
 )
 text = text.replace("progress-tracker.192.168.239.141.sslip.io", ingress_host)
 text = text.replace("progress-tracker.mah.com", ingress_alt_host)
+text = text.replace("nodePort: 30081", f"nodePort: {node_port}")
 manifest_path.write_text(text)
 PY
 kubectl apply -f "${MANIFEST_PATH}"
