@@ -28,3 +28,33 @@ jobs:
           kubectl get pods -A -o wide
           kubectl get svc -A
           kubectl get ingress -A || true
+
+      - name: Diagnose branch progress tracker
+        run: |
+          set -eux
+          namespace=branch-progress-tracker
+          kubectl get pods -n "${namespace}" -o wide
+          kubectl get svc -n "${namespace}"
+          kubectl get ingress -n "${namespace}" -o wide
+
+          echo "Backend health:"
+          kubectl exec -n "${namespace}" deploy/progress-tracker-backend -- \
+            python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health').read().decode())"
+
+          echo "Backend add project:"
+          kubectl exec -n "${namespace}" deploy/progress-tracker-backend -- \
+            python -c "import json, time, urllib.error, urllib.request; payload={'name':'Debug Project','repo':'debug/repo-' + str(int(time.time())),'branch':'main','prd_path':'prd.md'}; data=json.dumps(payload).encode(); req=urllib.request.Request('http://127.0.0.1:8000/api/projects', data=data, headers={'Content-Type':'application/json'}, method='POST'); \
+          try: \
+              resp=urllib.request.urlopen(req); print(resp.status); print(resp.read().decode()); \
+          except urllib.error.HTTPError as exc: \
+              print(exc.code); print(exc.read().decode()); raise"
+
+          echo "Frontend proxy add project:"
+          kubectl exec -n "${namespace}" deploy/progress-tracker-frontend -- \
+            node -e "const payload={name:'Debug Proxy Project',repo:'debug/proxy-'+Date.now(),branch:'main',prd_path:'prd.md'}; fetch('http://127.0.0.1:3000/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(async r=>{console.log(r.status); console.log(await r.text()); if(!r.ok) process.exit(1);})"
+
+          echo "Backend logs:"
+          kubectl logs -n "${namespace}" deploy/progress-tracker-backend --tail=120
+
+          echo "Frontend logs:"
+          kubectl logs -n "${namespace}" deploy/progress-tracker-frontend --tail=120
