@@ -12,11 +12,15 @@ type: Opaque
 stringData:
   SYNC_TOKEN: change-me
   GITHUB_TOKEN: ""
+  POSTGRES_USER: progress_tracker
+  POSTGRES_PASSWORD: progress_tracker
+  POSTGRES_DB: progress_tracker
+  DATABASE_URL: postgresql://progress_tracker:progress_tracker@progress-tracker-postgres.progress-tracker.svc.cluster.local:5432/progress_tracker
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: progress-tracker-data
+  name: progress-tracker-postgres-data
   namespace: progress-tracker
 spec:
   accessModes:
@@ -24,6 +28,84 @@ spec:
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: progress-tracker-postgres
+  namespace: progress-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: progress-tracker-postgres
+  template:
+    metadata:
+      labels:
+        app: progress-tracker-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - progress_tracker
+                - -d
+                - progress_tracker
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - progress_tracker
+                - -d
+                - progress_tracker
+            initialDelaySeconds: 20
+            periodSeconds: 20
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: progress-tracker-postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: progress-tracker-postgres
+  namespace: progress-tracker
+spec:
+  type: ClusterIP
+  selector:
+    app: progress-tracker-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -40,6 +122,24 @@ spec:
       labels:
         app: progress-tracker-backend
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - until pg_isready -h progress-tracker-postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 2; done
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: POSTGRES_DB
       containers:
         - name: backend
           image: progress-tracker-backend:latest
@@ -57,13 +157,13 @@ spec:
                 secretKeyRef:
                   name: progress-tracker-secrets
                   key: GITHUB_TOKEN
-            - name: DATABASE_PATH
-              value: /data/progress_tracker.db
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: progress-tracker-secrets
+                  key: DATABASE_URL
             - name: CORS_ORIGINS
               value: "*"
-          volumeMounts:
-            - name: data
-              mountPath: /data
           readinessProbe:
             httpGet:
               path: /health
@@ -76,10 +176,6 @@ spec:
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 20
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: progress-tracker-data
 ---
 apiVersion: v1
 kind: Service

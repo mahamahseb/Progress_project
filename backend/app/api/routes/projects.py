@@ -1,6 +1,5 @@
-from sqlite3 import IntegrityError
-
 from fastapi import APIRouter, HTTPException
+from psycopg.errors import UniqueViolation
 
 from app.modules.projects.repository import project_repository
 from app.modules.projects.schema import ProjectCreate, ProjectDetail, ProjectSummary
@@ -17,7 +16,7 @@ def list_projects() -> list[ProjectSummary]:
 def create_project(payload: ProjectCreate) -> ProjectDetail:
     try:
         return project_repository.create_project(payload)
-    except IntegrityError as exc:
+    except UniqueViolation as exc:
         raise HTTPException(status_code=409, detail="Project already exists") from exc
 
 

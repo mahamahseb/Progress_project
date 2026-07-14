@@ -4,7 +4,7 @@
 
 - Backend: FastAPI served by Uvicorn on port `8000`.
 - Frontend: Next.js served on port `3000`.
-- Database: SQLite for local/MVP use.
+- Database: PostgreSQL.
 - Sync source: GitHub raw PRD files or local sample PRD files.
 
 ## Local Docker
@@ -37,7 +37,7 @@ Application responsibilities in this repository:
 - Backend and frontend Deployments.
 - Backend and frontend Services.
 - Progress Tracker Ingress rules.
-- Progress Tracker TLS Secret and PVC.
+- Progress Tracker TLS Secret and PostgreSQL PVC.
 
 The Minikube deployment uses:
 
@@ -51,7 +51,11 @@ Browser
   -> NGINX Ingress Controller
   -> Ingress: progress-tracker
   -> Service: progress-tracker-frontend
-  -> Pods: frontend x 3, backend x 3
+  -> Pods: frontend x 3
+  -> Service: progress-tracker-backend
+  -> Pods: backend x 3
+  -> Service: progress-tracker-postgres
+  -> Pod: PostgreSQL x 1
 ```
 
 The shared NGINX Ingress Controller routes each namespace by hostname:
@@ -93,11 +97,13 @@ Resource summary:
 | Resource | Name | Namespace | Purpose |
 |---|---|---|---|
 | Namespace | `progress-tracker` | - | Isolates app resources |
-| Secret | `progress-tracker-secrets` | `progress-tracker` | Stores `SYNC_TOKEN` and optional `GITHUB_TOKEN` |
-| PVC | `progress-tracker-data` | `progress-tracker` | Stores SQLite database |
+| Secret | `progress-tracker-secrets` | `progress-tracker` | Stores `SYNC_TOKEN`, optional `GITHUB_TOKEN`, and PostgreSQL connection settings |
+| PVC | `progress-tracker-postgres-data` | `progress-tracker` | Stores PostgreSQL data |
+| Deployment | `progress-tracker-postgres` | `progress-tracker` | Runs PostgreSQL database |
 | Deployment | `progress-tracker-backend` | `progress-tracker` | Runs FastAPI backend |
 | Deployment | `progress-tracker-frontend` | `progress-tracker` | Runs Next.js frontend |
 | Service | `progress-tracker-backend` | `progress-tracker` | Internal backend service |
+| Service | `progress-tracker-postgres` | `progress-tracker` | Internal PostgreSQL service |
 | Service | `progress-tracker-frontend` | `progress-tracker` | Internal frontend service |
 | Service | `progress-tracker-web` | `progress-tracker` | NodePort access for `http://<server-ip>:30081` |
 | Ingress | `progress-tracker` | `progress-tracker` | Routes `progress-tracker.192.168.239.141.sslip.io` and `progress-tracker.mah.com` HTTPS access to the frontend service |
@@ -262,7 +268,7 @@ http://192.168.239.141:30081/
 
 ## Future Production Direction
 
-- PostgreSQL instead of SQLite.
+- Managed PostgreSQL, automated backups, and HA database topology.
 - Managed ingress or reverse proxy instead of long-running `port-forward`.
 - Secret management for GitHub token and sync token.
 - CI/CD image build and deployment pipeline.

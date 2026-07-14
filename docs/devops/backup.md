@@ -1,3 +1,3 @@
 # Backup
 
-For SQLite, back up `progress_tracker.db`. For future PostgreSQL, use managed snapshots or scheduled dumps.
+Back up PostgreSQL with managed snapshots, scheduled dumps, or volume snapshots depending on the target environment.

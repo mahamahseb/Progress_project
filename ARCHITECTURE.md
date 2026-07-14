@@ -10,14 +10,14 @@ GitHub Actions or manual sync
   -> GitHub/local PRD reader
   -> Markdown parser
   -> progress calculator
-  -> SQLite persistence
+  -> PostgreSQL persistence
   -> dashboard API
   -> Next.js dashboard
 ```
 
 ## Runtime Components
 
-- `backend/`: API, parser, GitHub integration, SQLite persistence, tests.
+- `backend/`: API, parser, GitHub integration, PostgreSQL persistence, tests.
 - `frontend/`: dashboard UI, project registration form, project detail view, sync logs.
 - `examples/`: sample tracked project PRD and GitHub Actions workflow.
 

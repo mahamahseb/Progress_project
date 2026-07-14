@@ -43,6 +43,7 @@
 - [x] Split frontend server-side API base from browser-side API base
 - [x] Use port `8081` for Progress Tracker ingress port-forward to avoid conflict with existing Minikube apps
 - [x] Add Minikube deployment helper script
+- [x] Replace SQLite persistence with PostgreSQL runtime database
 
 ## CI Tasks
 
@@ -51,6 +52,7 @@
 - [x] Build frontend in CI
 - [x] Validate Kubernetes manifest in CI
 - [x] Build backend and frontend Docker images in CI without pushing
+- [x] Deploy branch CI to Minikube namespace `branch-progress-tracker`
 - [x] Publish backend and frontend images to DockerHub after main branch CI succeeds
 
 ## CD Tasks
@@ -91,7 +93,7 @@
 
 - [x] Setup FastAPI project
 - [x] Create settings module
-- [x] Create SQLite repository for MVP
+- [x] Create PostgreSQL repository for runtime persistence
 - [x] Create project schemas
 - [x] Create task schemas
 - [x] Create PRD parser

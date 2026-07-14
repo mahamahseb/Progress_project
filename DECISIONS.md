@@ -6,11 +6,11 @@ Status: accepted
 
 The project keeps `backend/` and `frontend/` as top-level runtime folders so development commands remain simple and explicit.
 
-## ADR-002: Use SQLite for MVP Persistence
+## ADR-002: Use PostgreSQL for Runtime Persistence
 
 Status: accepted
 
-SQLite is used for the MVP to avoid operational overhead. The repository layer keeps migration to PostgreSQL practical later.
+PostgreSQL is used for runtime persistence so the backend can run multiple replicas and keep data in a shared database service.
 
 ## ADR-003: Use PRD Markdown as Progress Source
 

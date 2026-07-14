@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: progress_tracker
+      POSTGRES_PASSWORD: progress_tracker
+      POSTGRES_DB: progress_tracker
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U progress_tracker -d progress_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -9,7 +25,11 @@ services:
     environment:
       SYNC_TOKEN: change-me
       SAMPLE_PRD_PATH: examples/sample-project/prd.md
+      DATABASE_URL: postgresql://progress_tracker:progress_tracker@postgres:5432/progress_tracker
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
@@ -22,3 +42,6 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ""
     depends_on:
       - backend
+
+volumes:
+  postgres-data:

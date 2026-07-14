@@ -82,13 +82,13 @@ payload:
 
 ## Database
 
-ค่าเริ่มต้นใช้ SQLite ที่ `backend/progress_tracker.db`
+ค่าเริ่มต้นใช้ PostgreSQL
 
 ```txt
-DATABASE_PATH=progress_tracker.db
+DATABASE_URL=postgresql://progress_tracker:progress_tracker@localhost:5432/progress_tracker
 ```
 
-ถ้าต้องการเก็บไว้ในโฟลเดอร์อื่น สามารถเปลี่ยน path ใน `.env` ได้
+สำหรับ local development แนะนำให้ใช้ `docker compose up -d postgres` หรือ `docker compose up -d` เพื่อยก database พร้อม backend/frontend
 
 ## Documentation
 

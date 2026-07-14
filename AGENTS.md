@@ -15,7 +15,7 @@ Project Progress Tracker is a web dashboard that tracks project development prog
 ## Structure
 
 ```txt
-backend/     FastAPI backend, parser, sync flow, SQLite persistence
+backend/     FastAPI backend, parser, sync flow, PostgreSQL persistence
 frontend/    Next.js dashboard
 docs/        Detailed documentation by domain
 examples/    Sample project PRD and GitHub Actions workflow
@@ -98,7 +98,7 @@ APP_NAME=Project Progress Tracker
 SYNC_TOKEN=change-me
 GITHUB_TOKEN=
 SAMPLE_PRD_PATH=../examples/sample-project/prd.md
-DATABASE_PATH=progress_tracker.db
+DATABASE_URL=postgresql://progress_tracker:progress_tracker@localhost:5432/progress_tracker
 CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 

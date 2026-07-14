@@ -7,10 +7,14 @@ from app.modules.projects.schema import ProjectCreate, ProjectDetail, TaskRead
 
 class ProjectRepository:
     def __init__(self) -> None:
+        pass
+
+    def _ensure_schema(self) -> None:
         with get_connection() as connection:
             init_db(connection)
 
     def list_projects(self) -> list[ProjectDetail]:
+        self._ensure_schema()
         with get_connection() as connection:
             rows = connection.execute(
                 """
@@ -22,6 +26,7 @@ class ProjectRepository:
             return [self._project_from_row(row, tasks=[]) for row in rows]
 
     def get_project(self, project_id: str) -> ProjectDetail | None:
+        self._ensure_schema()
         with get_connection() as connection:
             project_row = connection.execute(
                 "SELECT * FROM projects WHERE id = ?",
@@ -53,6 +58,7 @@ class ProjectRepository:
         return self._project_from_row(project_row, tasks=tasks)
 
     def create_project(self, payload: ProjectCreate) -> ProjectDetail:
+        self._ensure_schema()
         project_id = payload.project_id or payload.repo.replace("/", "__")
         last_synced_at = datetime.now(UTC)
 
@@ -79,7 +85,7 @@ class ProjectRepository:
                     payload.repo,
                     payload.branch,
                     payload.prd_path,
-                    last_synced_at.isoformat(),
+                    last_synced_at,
                 ),
             )
             connection.commit()
@@ -110,6 +116,7 @@ class ProjectRepository:
         tasks: list[TaskRead],
         last_commit_sha: str | None,
     ) -> ProjectDetail:
+        self._ensure_schema()
         completed_tasks = sum(1 for task in tasks if task.is_completed)
         last_synced_at = datetime.now(UTC)
 
@@ -150,7 +157,7 @@ class ProjectRepository:
                     len(tasks),
                     completed_tasks,
                     last_commit_sha,
-                    last_synced_at.isoformat(),
+                    last_synced_at,
                 ),
             )
             connection.execute("DELETE FROM tasks WHERE project_id = ?", (project_id,))
@@ -171,7 +178,7 @@ class ProjectRepository:
                         project_id,
                         task.title,
                         task.section,
-                        int(task.is_completed),
+                        task.is_completed,
                         task.source_line,
                         task.weight,
                     )
@@ -206,7 +213,11 @@ class ProjectRepository:
             total_tasks=row["total_tasks"],
             completed_tasks=row["completed_tasks"],
             last_commit_sha=row["last_commit_sha"],
-            last_synced_at=datetime.fromisoformat(last_synced_at) if last_synced_at else None,
+            last_synced_at=(
+                datetime.fromisoformat(last_synced_at)
+                if isinstance(last_synced_at, str)
+                else last_synced_at
+            ),
             tasks=tasks,
         )
 

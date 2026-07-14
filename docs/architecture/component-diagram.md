@@ -6,6 +6,6 @@ flowchart LR
     Actions["GitHub Actions"] --> Backend
     Backend --> Parser["PRD Parser"]
     Parser --> Calculator["Progress Calculator"]
-    Backend --> DB["SQLite Database"]
+    Backend --> DB["PostgreSQL Database"]
     Frontend["Next.js Frontend"] --> Backend
 ```

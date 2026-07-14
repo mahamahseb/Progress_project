@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NAMESPACE="progress-tracker"
+NAMESPACE="${NAMESPACE:-progress-tracker}"
 DOCKERHUB_NAMESPACE="${DOCKERHUB_NAMESPACE:-}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 USE_REMOTE_IMAGES="${USE_REMOTE_IMAGES:-}"
@@ -72,7 +72,64 @@ kubectl create secret tls progress-tracker-tls \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "Applying Kubernetes manifests..."
-kubectl apply -f k8s/progress-tracker.yaml
+MANIFEST_PATH="$(mktemp)"
+export NAMESPACE INGRESS_HOST INGRESS_ALT_HOST MANIFEST_PATH
+python3 - <<'PY'
+import os
+from pathlib import Path
+
+import yaml
+
+namespace = os.environ["NAMESPACE"]
+ingress_host = os.environ["INGRESS_HOST"]
+ingress_alt_host = os.environ["INGRESS_ALT_HOST"]
+manifest_path = Path(os.environ["MANIFEST_PATH"])
+source_path = Path("k8s/progress-tracker.yaml")
+
+docs = [doc for doc in yaml.safe_load_all(source_path.read_text()) if doc]
+for doc in docs:
+    metadata = doc.setdefault("metadata", {})
+    if doc.get("kind") == "Namespace" and metadata.get("name") == "progress-tracker":
+        metadata["name"] = namespace
+    elif metadata.get("namespace") == "progress-tracker":
+        metadata["namespace"] = namespace
+
+    if doc.get("kind") == "Secret" and metadata.get("name") == "progress-tracker-secrets":
+        string_data = doc.setdefault("stringData", {})
+        database_url = string_data.get("DATABASE_URL")
+        if database_url:
+            string_data["DATABASE_URL"] = database_url.replace(
+                ".progress-tracker.svc.cluster.local",
+                f".{namespace}.svc.cluster.local",
+            )
+
+    if doc.get("kind") == "Deployment" and metadata.get("name") == "progress-tracker-frontend":
+        containers = doc["spec"]["template"]["spec"]["containers"]
+        for container in containers:
+            for env in container.get("env", []):
+                if env.get("name") == "API_BASE_URL":
+                    env["value"] = env["value"].replace(
+                        ".progress-tracker.svc.cluster.local",
+                        f".{namespace}.svc.cluster.local",
+                    )
+
+    if doc.get("kind") == "Ingress" and metadata.get("name") == "progress-tracker":
+        spec = doc.setdefault("spec", {})
+        spec["tls"] = [
+            {
+                "hosts": [ingress_host, ingress_alt_host],
+                "secretName": "progress-tracker-tls",
+            }
+        ]
+        rules = spec.setdefault("rules", [])
+        if len(rules) >= 2:
+            rules[0]["host"] = ingress_host
+            rules[1]["host"] = ingress_alt_host
+
+manifest_path.write_text(yaml.safe_dump_all(docs, sort_keys=False))
+PY
+kubectl apply -f "${MANIFEST_PATH}"
+kubectl rollout status deployment/progress-tracker-postgres -n "${NAMESPACE}"
 
 if [ "${USE_REMOTE_IMAGES}" = "1" ]; then
   echo "Pointing deployments at DockerHub images..."

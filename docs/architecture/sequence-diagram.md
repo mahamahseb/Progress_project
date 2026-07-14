@@ -5,7 +5,7 @@ sequenceDiagram
     participant Dev as Developer
     participant GH as GitHub
     participant API as FastAPI
-    participant DB as SQLite
+    participant DB as PostgreSQL
     participant UI as Dashboard
 
     Dev->>GH: Push code and PRD changes

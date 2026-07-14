@@ -1,13 +1,13 @@
 # Database Overview
 
-## MVP Database
+## Runtime Database
 
-The MVP uses SQLite.
+The application uses PostgreSQL.
 
-Default path:
+Default connection URL:
 
 ```txt
-backend/progress_tracker.db
+postgresql://progress_tracker:progress_tracker@localhost:5432/progress_tracker
 ```
 
 ## Tables

@@ -6,7 +6,7 @@
 - Progress Tracker Frontend: displays project progress and sync activity.
 - GitHub: stores project repositories and PRD files.
 - GitHub Actions: notifies the backend after pushes.
-- SQLite: stores projects, parsed tasks, and sync logs for the MVP.
+- PostgreSQL: stores projects, parsed tasks, and sync logs.
 
 ## Main Integration Points
 

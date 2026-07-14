@@ -82,6 +82,7 @@ kubectl apply -f k8s/progress-tracker.yaml
 Wait for rollout:
 
 ```bash
+kubectl rollout status deployment/progress-tracker-postgres -n progress-tracker
 kubectl rollout status deployment/progress-tracker-backend -n progress-tracker
 kubectl rollout status deployment/progress-tracker-frontend -n progress-tracker
 ```
@@ -126,7 +127,7 @@ kubectl logs -n progress-tracker <pod-name>
 
 ## Notes
 
-- The backend stores SQLite data at `/data/progress_tracker.db`.
-- The manifest creates a PVC named `progress-tracker-data`.
+- PostgreSQL stores data in the `progress-tracker-postgres-data` PVC.
+- The backend connects with `DATABASE_URL` from `progress-tracker-secrets`.
 - Persistent access should use the shared lab1 ingress services, not manual `kubectl port-forward`.
 - NodePort and direct port-forward are fallback paths only.

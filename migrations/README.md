@@ -1,3 +1,3 @@
 # Migrations
 
-Database migration files can be placed here when the project moves beyond the current SQLite schema initializer.
+Database migration files can be placed here when the project moves beyond the current PostgreSQL schema initializer.

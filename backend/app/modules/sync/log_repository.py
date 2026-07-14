@@ -7,6 +7,9 @@ from app.modules.sync.schema import SyncLogRead
 
 class SyncLogRepository:
     def __init__(self) -> None:
+        pass
+
+    def _ensure_schema(self) -> None:
         with get_connection() as connection:
             init_db(connection)
 
@@ -19,6 +22,7 @@ class SyncLogRepository:
         status: str,
         message: str,
     ) -> SyncLogRead:
+        self._ensure_schema()
         created_at = datetime.now(UTC)
         with get_connection() as connection:
             cursor = connection.execute(
@@ -32,11 +36,13 @@ class SyncLogRepository:
                     created_at
                 )
                 VALUES (?, ?, ?, ?, ?, ?)
+                RETURNING id
                 """,
-                (project_id, repo, commit_sha, status, message, created_at.isoformat()),
+                (project_id, repo, commit_sha, status, message, created_at),
             )
+            row = cursor.fetchone()
             connection.commit()
-            log_id = cursor.lastrowid
+            log_id = row["id"] if row else 0
 
         return SyncLogRead(
             id=log_id,
@@ -49,6 +55,7 @@ class SyncLogRepository:
         )
 
     def list_logs(self, project_id: str | None = None, limit: int = 50) -> list[SyncLogRead]:
+        self._ensure_schema()
         sql = """
             SELECT id, project_id, repo, commit_sha, status, message, created_at
             FROM sync_logs
@@ -71,7 +78,11 @@ class SyncLogRepository:
                 commit_sha=row["commit_sha"],
                 status=row["status"],
                 message=row["message"],
-                created_at=datetime.fromisoformat(row["created_at"]),
+                created_at=(
+                    datetime.fromisoformat(row["created_at"])
+                    if isinstance(row["created_at"], str)
+                    else row["created_at"]
+                ),
             )
             for row in rows
         ]

@@ -6,6 +6,6 @@ flowchart TB
     Ingress --> Web["progress-tracker-frontend Service"]
     Ingress --> API["progress-tracker-backend Service"]
     Web --> API
-    API --> DB["SQLite PVC /data"]
+    API --> DB["PostgreSQL Service + PVC"]
     API --> GitHub["GitHub Raw Content API"]
 ```

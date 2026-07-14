@@ -8,9 +8,9 @@ This folder contains application-owned Kubernetes manifests for Progress Tracker
 
 - Namespace: `progress-tracker`
 - Secret: `progress-tracker-secrets`
-- PVC: `progress-tracker-data`
-- Deployments: backend and frontend
-- Services: backend, frontend, and NodePort fallback
+- PVC: `progress-tracker-postgres-data`
+- Deployments: PostgreSQL, backend, and frontend
+- Services: PostgreSQL, backend, frontend, and NodePort fallback
 - Ingress: `progress-tracker`
 
 Apply this layer on the Minikube server:

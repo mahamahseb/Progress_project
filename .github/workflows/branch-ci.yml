@@ -9,6 +9,22 @@ jobs:
   backend-tests:
     name: Backend tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: progress_tracker
+          POSTGRES_PASSWORD: progress_tracker
+          POSTGRES_DB: progress_tracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U progress_tracker -d progress_tracker_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://progress_tracker:progress_tracker@localhost:5432/progress_tracker_test
     defaults:
       run:
         working-directory: backend
@@ -103,3 +119,47 @@ jobs:
 
       - name: Build frontend image
         run: docker build -t progress-tracker-frontend:branch-ci -f frontend/Dockerfile ./frontend
+
+  deploy-branch:
+    name: Deploy branch to Minikube
+    runs-on:
+      - self-hosted
+      - linux
+    needs:
+      - backend-tests
+      - frontend-build
+      - kubernetes-validate
+      - docker-build
+    concurrency:
+      group: branch-progress-tracker-minikube
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required tools
+        run: |
+          docker --version
+          minikube version
+          kubectl version --client
+          python3 --version
+
+      - name: Install YAML parser
+        run: python3 -m pip install --user pyyaml
+
+      - name: Deploy branch namespace
+        env:
+          NAMESPACE: branch-progress-tracker
+          USE_REMOTE_IMAGES: "0"
+          INGRESS_HOST: branch-progress-tracker.192.168.239.141.sslip.io
+          INGRESS_ALT_HOST: branch-progress-tracker.mah.com
+          MANAGE_DIRECT_PORT_FORWARD: "0"
+          MANAGE_HTTPS_FORWARDER: "0"
+        run: bash scripts/deploy-minikube.sh
+
+      - name: Show branch access URL
+        run: |
+          echo "Branch namespace deployed: branch-progress-tracker"
+          echo "Open:"
+          echo "https://branch-progress-tracker.192.168.239.141.sslip.io/"
+          echo "https://branch-progress-tracker.mah.com/"

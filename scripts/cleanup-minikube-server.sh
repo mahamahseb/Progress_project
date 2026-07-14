@@ -32,8 +32,7 @@ if [ -d "${CLEAN_ROOT}" ]; then
     "${CLEAN_ROOT}/frontend/.next" \
     "${CLEAN_ROOT}/frontend/node_modules" \
     "${CLEAN_ROOT}/node_modules" \
-    "${CLEAN_ROOT}/.tools-gh-release.json" \
-    "${CLEAN_ROOT}/progress_tracker.db"
+    "${CLEAN_ROOT}/.tools-gh-release.json"
 else
   echo "${CLEAN_ROOT} does not exist; skipping workspace cleanup."
 fi
