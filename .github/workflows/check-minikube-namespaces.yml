@@ -42,12 +42,34 @@ jobs:
             python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health').read().decode())"
 
           echo "Backend add project:"
-          kubectl exec -n "${namespace}" deploy/progress-tracker-backend -- \
-            python -c "import json, time, urllib.error, urllib.request; payload={'name':'Debug Project','repo':'debug/repo-' + str(int(time.time())),'branch':'main','prd_path':'prd.md'}; data=json.dumps(payload).encode(); req=urllib.request.Request('http://127.0.0.1:8000/api/projects', data=data, headers={'Content-Type':'application/json'}, method='POST'); \
-          try: \
-              resp=urllib.request.urlopen(req); print(resp.status); print(resp.read().decode()); \
-          except urllib.error.HTTPError as exc: \
-              print(exc.code); print(exc.read().decode()); raise"
+          kubectl exec -i -n "${namespace}" deploy/progress-tracker-backend -- python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+
+          payload = {
+              "name": "Debug Project",
+              "repo": "debug/repo-" + str(int(time.time())),
+              "branch": "main",
+              "prd_path": "prd.md",
+          }
+          data = json.dumps(payload).encode()
+          request = urllib.request.Request(
+              "http://127.0.0.1:8000/api/projects",
+              data=data,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              response = urllib.request.urlopen(request)
+              print(response.status)
+              print(response.read().decode())
+          except urllib.error.HTTPError as exc:
+              print(exc.code)
+              print(exc.read().decode())
+              raise
+          PY
 
           echo "Frontend proxy add project:"
           kubectl exec -n "${namespace}" deploy/progress-tracker-frontend -- \
