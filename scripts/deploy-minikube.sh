@@ -113,6 +113,8 @@ if [ "${USE_REMOTE_IMAGES}" = "1" ]; then
     -p='[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Always"}]'
 else
   echo "Restarting deployments to use the latest loaded images..."
+  kubectl set image deployment/progress-tracker-backend backend="${BACKEND_IMAGE}" -n "${NAMESPACE}"
+  kubectl set image deployment/progress-tracker-frontend frontend="${FRONTEND_IMAGE}" -n "${NAMESPACE}"
   kubectl set env deployment/progress-tracker-frontend "APP_VERSION=${APP_VERSION}" "NEXT_PUBLIC_APP_VERSION=${APP_VERSION}" -n "${NAMESPACE}"
   kubectl rollout restart deployment/progress-tracker-backend -n "${NAMESPACE}"
   kubectl rollout restart deployment/progress-tracker-frontend -n "${NAMESPACE}"
