@@ -35,9 +35,6 @@ jobs:
           kubectl version --client
           python3 --version
 
-      - name: Install YAML parser
-        run: python3 -m pip install --user pyyaml
-
       - name: Deploy to Minikube
         env:
           PORT_FORWARD_PORT: ${{ inputs.port_forward_port || '8081' }}

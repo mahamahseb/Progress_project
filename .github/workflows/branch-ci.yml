@@ -144,9 +144,6 @@ jobs:
           kubectl version --client
           python3 --version
 
-      - name: Install YAML parser
-        run: python3 -m pip install --user pyyaml
-
       - name: Deploy branch namespace
         env:
           NAMESPACE: branch-progress-tracker
