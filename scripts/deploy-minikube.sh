@@ -10,8 +10,8 @@ if [ -n "${DOCKERHUB_NAMESPACE}" ]; then
   BACKEND_IMAGE="${BACKEND_IMAGE:-${DOCKERHUB_NAMESPACE}/progress-tracker-backend:${IMAGE_TAG}}"
   FRONTEND_IMAGE="${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE}/progress-tracker-frontend:${IMAGE_TAG}}"
 else
-  BACKEND_IMAGE="${BACKEND_IMAGE:-progress-tracker-backend:latest}"
-  FRONTEND_IMAGE="${FRONTEND_IMAGE:-progress-tracker-frontend:latest}"
+  BACKEND_IMAGE="${BACKEND_IMAGE:-progress-tracker-backend:${IMAGE_TAG}}"
+  FRONTEND_IMAGE="${FRONTEND_IMAGE:-progress-tracker-frontend:${IMAGE_TAG}}"
 fi
 if [ -z "${USE_REMOTE_IMAGES}" ]; then
   if [ -n "${DOCKERHUB_NAMESPACE}" ]; then
